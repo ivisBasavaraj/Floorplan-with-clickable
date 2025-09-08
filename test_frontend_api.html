@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend API Connection</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Frontend API Connection Test</h1>
+    <p>This page tests the connection between frontend and backend API.</p>
+    
+    <button onclick="testHealthCheck()">Test Health Check</button>
+    <button onclick="testPublicFloorPlans()">Test Public Floor Plans</button>
+    <button onclick="testLogin()">Test Login</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testHealthCheck() {
+            clearResults();
+            addResult('Testing health check...', 'info');
+            
+            try {
+                const response = await fetch('http://localhost:5000/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Health check successful: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    addResult(`❌ Health check failed: ${response.status} - ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Health check error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPublicFloorPlans() {
+            clearResults();
+            addResult('Testing public floor plans API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/public/floorplans`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Public floor plans API successful`, 'success');
+                    addResult(`Found ${data.floorplans.length} floor plans:`, 'info');
+                    addResult(`<pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                } else {
+                    addResult(`❌ Public floor plans API failed: ${response.status} - ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Public floor plans API error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            clearResults();
+            addResult('Testing login API...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'testuser',
+                        password: 'user123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Login successful for user: ${data.user.username}`, 'success');
+                    addResult(`User role: ${data.user.role}`, 'info');
+                    
+                    // Test authenticated API call
+                    const token = data.access_token;
+                    const authResponse = await fetch(`${API_BASE}/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (authResponse.ok) {
+                        const profileData = await authResponse.json();
+                        addResult(`✅ Authenticated API call successful`, 'success');
+                        addResult(`<pre>${JSON.stringify(profileData, null, 2)}</pre>`, 'info');
+                    } else {
+                        addResult(`❌ Authenticated API call failed: ${authResponse.status}`, 'error');
+                    }
+                } else {
+                    addResult(`❌ Login failed: ${response.status} - ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run tests on page load
+        window.onload = function() {
+            addResult('Page loaded. Click buttons to test API endpoints.', 'info');
+        };
+    </script>
+</body>
+</html>

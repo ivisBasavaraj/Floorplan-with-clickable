@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - IMTMA Flooring{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-chart-bar me-2"></i>Analytics & Reports</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Export Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Floor Plans</h5>
+                        <h2 class="mb-0">{{ analytics.floorplan_count }}</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-map fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Total Booths</h5>
+                        <h2 class="mb-0">{{ analytics.total_booths }}</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-store fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Occupancy Rate</h5>
+                        <h2 class="mb-0">
+                            {% set occupancy = ((analytics.booths_by_status.sold + analytics.booths_by_status.reserved) / analytics.total_booths * 100) if analytics.total_booths > 0 else 0 %}
+                            {{ "%.1f"|format(occupancy) }}%
+                        </h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-percentage fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">Total Revenue</h5>
+                        <h2 class="mb-0">${{ "{:,.0f}".format(analytics.revenue_by_status.sold + analytics.revenue_by_status.reserved) }}</h2>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-dollar-sign fa-3x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-pie me-2"></i>Booth Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Revenue Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floor Plan Performance -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-trophy me-2"></i>Floor Plan Performance</h5>
+            </div>
+            <div class="card-body">
+                {% if analytics.floorplan_stats %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Floor Plan</th>
+                                <th>Total Booths</th>
+                                <th>Available</th>
+                                <th>Reserved</th>
+                                <th>Sold</th>
+                                <th>On Hold</th>
+                                <th>Occupancy Rate</th>
+                                <th>Revenue</th>
+                                <th>Last Modified</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fp in analytics.floorplan_stats %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('dashboard.floorplan_detail', floorplan_id=fp.id) }}" 
+                                       class="text-decoration-none">
+                                        <strong>{{ fp.name }}</strong>
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-primary">{{ fp.stats.total_booths }}</span></td>
+                                <td><span class="badge badge-available">{{ fp.stats.available }}</span></td>
+                                <td><span class="badge badge-reserved">{{ fp.stats.reserved }}</span></td>
+                                <td><span class="badge badge-sold">{{ fp.stats.sold }}</span></td>
+                                <td><span class="badge badge-on-hold">{{ fp.stats.on_hold }}</span></td>
+                                <td>
+                                    {% set fp_occupancy = ((fp.stats.sold + fp.stats.reserved) / fp.stats.total_booths * 100) if fp.stats.total_booths > 0 else 0 %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 60px; height: 8px;">
+                                            <div class="progress-bar bg-success" style="width: {{ fp_occupancy }}%"></div>
+                                        </div>
+                                        <small>{{ "%.1f"|format(fp_occupancy) }}%</small>
+                                    </div>
+                                </td>
+                                <td><strong>${{ "{:,.0f}".format(fp.stats.total_revenue) }}</strong></td>
+                                <td><small>{{ fp.last_modified.strftime('%Y-%m-%d') }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No data available</h5>
+                    <p class="text-muted">Create some floor plans to see performance analytics</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Booth Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="d-flex flex-column">
+                            <strong class="text-success fs-4">{{ analytics.booths_by_status.available }}</strong>
+                            <small class="text-muted">Available</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="d-flex flex-column">
+                            <strong class="text-warning fs-4">{{ analytics.booths_by_status.reserved }}</strong>
+                            <small class="text-muted">Reserved</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="d-flex flex-column">
+                            <strong class="text-info fs-4">{{ analytics.booths_by_status.sold }}</strong>
+                            <small class="text-muted">Sold</small>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="d-flex flex-column">
+                            <strong class="text-danger fs-4">{{ analytics.booths_by_status.on_hold }}</strong>
+                            <small class="text-muted">On Hold</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-dollar-sign me-2"></i>Revenue Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Reserved Revenue:</span>
+                    <strong class="text-warning">${{ "{:,.2f}".format(analytics.revenue_by_status.reserved) }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Sold Revenue:</span>
+                    <strong class="text-success">${{ "{:,.2f}".format(analytics.revenue_by_status.sold) }}</strong>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <span><strong>Total Revenue:</strong></span>
+                    <strong class="text-primary">${{ "{:,.2f}".format(analytics.revenue_by_status.sold + analytics.revenue_by_status.reserved) }}</strong>
+                </div>
+                
+                {% if analytics.total_booths > 0 %}
+                <div class="mt-3">
+                    <small class="text-muted">
+                        Average revenue per booth: 
+                        ${{ "{:,.2f}".format((analytics.revenue_by_status.sold + analytics.revenue_by_status.reserved) / analytics.total_booths) }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Booth Status Distribution Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Available', 'Reserved', 'Sold', 'On Hold'],
+        datasets: [{
+            data: [
+                {{ analytics.booths_by_status.available }},
+                {{ analytics.booths_by_status.reserved }},
+                {{ analytics.booths_by_status.sold }},
+                {{ analytics.booths_by_status.on_hold }}
+            ],
+            backgroundColor: [
+                '#28a745',
+                '#ffc107',
+                '#17a2b8',
+                '#dc3545'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+
+// Revenue Breakdown Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+const revenueChart = new Chart(revenueCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Reserved', 'Sold'],
+        datasets: [{
+            label: 'Revenue ($)',
+            data: [
+                {{ analytics.revenue_by_status.reserved }},
+                {{ analytics.revenue_by_status.sold }}
+            ],
+            backgroundColor: [
+                '#ffc107',
+                '#28a745'
+            ],
+            borderWidth: 0,
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value.toLocaleString();
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

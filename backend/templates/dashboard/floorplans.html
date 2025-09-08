@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Floor Plans - IMTMA Flooring{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-map me-2"></i>Floor Plans</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <form method="GET" class="d-flex">
+            <input type="text" class="form-control me-2" name="search" 
+                   placeholder="Search floor plans..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+            </button>
+        </form>
+    </div>
+    <div class="col-md-6 text-end">
+        <span class="text-muted">{{ total }} floor plan(s) found</span>
+    </div>
+</div>
+
+<!-- Floor Plans Grid -->
+{% if floorplans %}
+<div class="row">
+    {% for fp in floorplans %}
+    <div class="col-xl-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">{{ fp.name }}</h6>
+                <small class="text-muted">v{{ fp.version }}</small>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-muted small">
+                    {{ fp.description or 'No description available' }}
+                </p>
+                
+                <!-- Statistics -->
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="d-flex flex-column">
+                            <small class="text-muted">Total Booths</small>
+                            <strong class="text-primary">{{ fp.stats.total_booths }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex flex-column">
+                            <small class="text-muted">Revenue</small>
+                            <strong class="text-success">${{ "{:,.0f}".format(fp.stats.total_revenue) }}</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Badges -->
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                    {% if fp.stats.available > 0 %}
+                    <span class="badge badge-available">{{ fp.stats.available }} Available</span>
+                    {% endif %}
+                    {% if fp.stats.reserved > 0 %}
+                    <span class="badge badge-reserved">{{ fp.stats.reserved }} Reserved</span>
+                    {% endif %}
+                    {% if fp.stats.sold > 0 %}
+                    <span class="badge badge-sold">{{ fp.stats.sold }} Sold</span>
+                    {% endif %}
+                    {% if fp.stats.on_hold > 0 %}
+                    <span class="badge badge-on-hold">{{ fp.stats.on_hold }} On Hold</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Progress Bar -->
+                {% set occupancy_rate = ((fp.stats.sold + fp.stats.reserved) / fp.stats.total_booths * 100) if fp.stats.total_booths > 0 else 0 %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">Occupancy Rate</small>
+                        <small class="text-muted">{{ "%.1f"|format(occupancy_rate) }}%</small>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ occupancy_rate }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ fp.last_modified.strftime('%Y-%m-%d %H:%M') }}
+                    </small>
+                    <a href="{{ url_for('dashboard.floorplan_detail', floorplan_id=fp._id) }}" 
+                       class="btn btn-sm btn-primary">
+                        <i class="fas fa-eye me-1"></i>View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if pages > 1 %}
+<nav aria-label="Floor plans pagination">
+    <ul class="pagination justify-content-center">
+        {% if page > 1 %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page - 1 }}{% if search %}&search={{ search }}{% endif %}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+        
+        {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+        <li class="page-item active">
+            <span class="page-link">{{ p }}</span>
+        </li>
+        {% elif p == 1 or p == pages or (p >= page - 2 and p <= page + 2) %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ p }}{% if search %}&search={{ search }}{% endif %}">{{ p }}</a>
+        </li>
+        {% elif p == page - 3 or p == page + 3 %}
+        <li class="page-item disabled">
+            <span class="page-link">...</span>
+        </li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if page < pages %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page + 1 }}{% if search %}&search={{ search }}{% endif %}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="text-center py-5">
+    <i class="fas fa-map fa-5x text-muted mb-4"></i>
+    <h3 class="text-muted">No Floor Plans Found</h3>
+    {% if search %}
+    <p class="text-muted">No floor plans match your search criteria.</p>
+    <a href="{{ url_for('dashboard.floorplans_list') }}" class="btn btn-secondary">Clear Search</a>
+    {% else %}
+    <p class="text-muted">Create your first floor plan through the API to get started.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

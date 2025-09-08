@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure full viewport usage without scrollbars */
+html, body {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* 3D Viewer styles */
+.viewer-3d-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.viewer-3d-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 10;
+}
+
+.viewer-3d-legend {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+/* View Toggle styles */
+.view-toggle {
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.view-toggle button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.view-toggle button:hover {
+  background-color: #f9fafb;
+}
+
+.view-toggle button.active {
+  background-color: #2563eb;
+  color: white;
+}
+
+.view-toggle button + button {
+  border-left: 1px solid #e5e7eb;
+}
+
+/* Canvas specific styles */
+.canvas-area {
+  touch-action: none; /* Prevent default touch behaviors */
+}
+
+/* Ensure grid layout works properly */
+.grid {
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Prevent any scrollbars in the floor plan editor */
+.floor-plan-editor {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Ensure responsive canvas container */
+.canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Area Map Grid */
+.area-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.area-map-card {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.area-map-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.area-map-card.selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.area-map-preview {
+  aspect-ratio: 16/9;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.area-map-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 1024px) {
+  .floor-plan-editor .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .area-map-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}

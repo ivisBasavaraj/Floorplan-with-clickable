@@ -1,0 +1,219 @@
+.exhibition-floor-plan {
+  width: 100%;
+  height: 100vh;
+  background-color: #f5f5f5;
+  overflow: auto;
+  position: relative;
+}
+
+.floor-plan-container {
+  position: relative;
+  width: 1200px;
+  height: 600px;
+  margin: 20px auto;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.floor-background {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.pathway-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.section-label {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+.sustainable-section {
+  top: 100px;
+  left: 250px;
+}
+
+.waste-section {
+  top: 280px;
+  right: 100px;
+}
+
+.piazza-area {
+  position: absolute;
+  top: 420px;
+  left: 520px;
+  width: 150px;
+  height: 100px;
+  background: rgba(144, 238, 144, 0.3);
+  border: 2px dashed #90EE90;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #2d5016;
+  z-index: 2;
+}
+
+.hall-indicator {
+  position: absolute;
+  bottom: 80px;
+  left: 315px;
+  background: #2c5530;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: center;
+  font-weight: bold;
+  z-index: 3;
+}
+
+.hall-number {
+  display: block;
+  font-size: 18px;
+  margin-top: 2px;
+}
+
+.booth {
+  position: absolute;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  z-index: 3;
+}
+
+.booth-available {
+  background-color: #90EE90;
+  border-color: #7BC97B;
+}
+
+.booth-onhold {
+  background-color: #ffffff;
+  border-color: #dee2e6;
+}
+
+.booth-reserved {
+  background-color: #2c5530;
+  border-color: #1e3a21;
+  color: white;
+}
+
+.booth:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 4;
+}
+
+.booth.selected {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.booth-label {
+  padding: 2px 4px;
+  line-height: 1.2;
+  word-break: break-word;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.legend {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-color {
+  width: 20px;
+  height: 16px;
+  border-radius: 3px;
+  margin-right: 10px;
+  border: 1px solid #dee2e6;
+}
+
+.legend-color.available {
+  background-color: #90EE90;
+}
+
+.legend-color.onhold {
+  background-color: #ffffff;
+}
+
+.legend-color.reserved {
+  background-color: #2c5530;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1280px) {
+  .floor-plan-container {
+    transform: scale(0.8);
+    transform-origin: top center;
+  }
+}
+
+@media (max-width: 1024px) {
+  .floor-plan-container {
+    transform: scale(0.6);
+    transform-origin: top center;
+  }
+}
+
+@media (max-width: 768px) {
+  .exhibition-floor-plan {
+    overflow-x: auto;
+  }
+  
+  .floor-plan-container {
+    transform: scale(0.5);
+    transform-origin: top left;
+    margin: 10px;
+  }
+}
