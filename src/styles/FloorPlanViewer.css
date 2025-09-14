@@ -207,18 +207,7 @@
   background: linear-gradient(135deg, white 0%, #f8fafc 100%);
 }
 
-/* ExpofP-style Sidebar */
-.sidebar {
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
-  border-right: 1px solid #e2e8f0;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.08);
-  width: 384px;
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
+
 
 .sidebar::before {
   content: '';
@@ -341,14 +330,14 @@
 
 /* ExpofP-style Control Buttons */
 .control-button {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9));
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 .control-button::before {
@@ -441,8 +430,74 @@
 
 /* ExpofP-style Canvas Background */
 .canvas-area {
-  background: radial-gradient(ellipse at center, #f7fafc 0%, #edf2f7 100%);
+  background: radial-gradient(ellipse at center, #f8fafc 0%, #f1f5f9 100%);
   position: relative;
+}
+
+.expofp-main {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+}
+
+.canvas-controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 100;
+}
+
+.zoom-controls {
+  display: flex;
+  gap: 4px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.9));
+  backdrop-filter: blur(24px);
+  padding: 6px;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.zoom-btn {
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.zoom-btn:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  color: #667eea;
+  transform: translateY(-1px);
+}
+
+.zoom-btn.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+}
+
+.zoom-btn.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmerBtn 2s infinite;
+}
+
+@keyframes shimmerBtn {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 
 .canvas-area::before {
@@ -1155,4 +1210,588 @@
   border-radius: 4px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(156, 66, 33, 0.2);
+}
+
+/* ExpoFP-style Sidebar */
+.expofp-sidebar {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 420px;
+  height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15), -2px 0 8px rgba(0, 0, 0, 0.08);
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+  backdrop-filter: blur(20px);
+  border-left: 1px solid #e1e8ed;
+}
+
+.expofp-sidebar.active {
+  right: 0;
+  box-shadow: -12px 0 48px rgba(0, 0, 0, 0.2), -4px 0 16px rgba(0, 0, 0, 0.1);
+}
+
+.expofp-sidebar .close-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  font-size: 20px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.expofp-sidebar .close-btn:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border-color: #dc2626;
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+}
+
+.expofp-sidebar .sidebar-header {
+  padding: 72px 28px 28px 28px;
+  text-align: center;
+  border-bottom: 1px solid #e1e8ed;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);
+  position: relative;
+}
+
+.expofp-sidebar .sidebar-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 28px;
+  right: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  opacity: 0.4;
+}
+
+.expofp-sidebar .logo {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 20px;
+  margin: 0 auto 20px auto;
+  display: block;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.expofp-sidebar .logo:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.expofp-sidebar #sidebar-title {
+  margin: 0 0 8px 0;
+  color: #1a1f36;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.expofp-sidebar #sidebar-company {
+  margin: 0 0 12px 0;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  padding: 8px 16px;
+  border-radius: 12px;
+  display: inline-block;
+  border: 1px solid #cbd5e1;
+}
+
+.expofp-sidebar .sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.expofp-sidebar .sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.expofp-sidebar .sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.expofp-sidebar .sidebar-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+  border-radius: 3px;
+}
+
+.expofp-sidebar .sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+.expofp-sidebar #sidebar-description {
+  margin: 0 0 24px 0;
+  color: #475569;
+  line-height: 1.7;
+  font-size: 15px;
+  font-weight: 400;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.expofp-sidebar #sidebar-description::before {
+  content: '"';
+  position: absolute;
+  top: -8px;
+  left: 16px;
+  font-size: 32px;
+  color: #667eea;
+  font-weight: 700;
+  background: white;
+  padding: 0 8px;
+}
+
+.expofp-sidebar .sidebar-content p {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #475569;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.expofp-sidebar .sidebar-content strong {
+  color: #1a1f36;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.expofp-sidebar .sidebar-footer {
+  padding: 28px;
+  border-top: 1px solid #e1e8ed;
+  background: linear-gradient(135deg, #f8fafb, #f1f5f9);
+  position: relative;
+}
+
+.expofp-sidebar .sidebar-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 28px;
+  right: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  opacity: 0.3;
+}
+
+.expofp-sidebar .btn-primary {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+  overflow: hidden;
+}
+
+.expofp-sidebar .btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.expofp-sidebar .btn-primary:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+}
+
+.expofp-sidebar .btn-primary:hover::before {
+  left: 100%;
+}
+
+.expofp-sidebar .btn-primary:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.expofp-sidebar .btn-primary:disabled {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+/* ExpoFP Left Sidebar - Exhibitor List */
+.expofp-sidebar-left {
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border-right: 1px solid #e1e8ed;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+  backdrop-filter: blur(20px);
+}
+
+.expofp-sidebar-left .sidebar-header {
+  padding: 28px 24px 24px;
+  border-bottom: 1px solid #e1e8ed;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);
+  position: relative;
+}
+
+.expofp-sidebar-left .sidebar-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  opacity: 0.3;
+}
+
+.expofp-sidebar-left h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1f36;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.expofp-sidebar-left .exhibitor-count {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  padding: 4px 12px;
+  border-radius: 12px;
+  display: inline-block;
+  border: 1px solid #e2e8f0;
+}
+
+.expofp-sidebar-left .search-container {
+  position: relative;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 20px;
+}
+
+.expofp-sidebar-left .search-container:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15), 0 0 0 3px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.expofp-sidebar-left .search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.expofp-sidebar-left .search-input {
+  width: 100%;
+  padding: 14px 44px;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 16px;
+  background: transparent;
+  color: #1a1f36;
+}
+
+.expofp-sidebar-left .search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.expofp-sidebar-left .search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  font-size: 16px;
+}
+
+.expofp-sidebar-left .clear-btn {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.expofp-sidebar-left .clear-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.expofp-sidebar-left .exhibitor-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.expofp-sidebar-left .exhibitor-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.expofp-sidebar-left .exhibitor-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.expofp-sidebar-left .exhibitor-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+  border-radius: 3px;
+}
+
+.expofp-sidebar-left .exhibitor-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+.expofp-sidebar-left .exhibitor-item {
+  display: flex;
+  align-items: center;
+  padding: 18px;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 16px;
+  border: 1px solid #e1e8ed;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.expofp-sidebar-left .exhibitor-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.expofp-sidebar-left .exhibitor-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: #c7d2fe;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.expofp-sidebar-left .exhibitor-item:hover::before {
+  transform: scaleX(1);
+}
+
+.expofp-sidebar-left .exhibitor-item:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.expofp-sidebar-left .exhibitor-logo {
+  width: 52px;
+  height: 52px;
+  margin-right: 16px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.expofp-sidebar-left .exhibitor-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.expofp-sidebar-left .logo-placeholder {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.expofp-sidebar-left .logo-placeholder::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.expofp-sidebar-left .exhibitor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.expofp-sidebar-left .exhibitor-info h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1f36;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.expofp-sidebar-left .exhibitor-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.expofp-sidebar-left .booth-tag {
+  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.expofp-sidebar-left .category-tag {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.expofp-sidebar-left .exhibitor-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-weight: 400;
+}
+
+.expofp-sidebar-left .close-btn {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+  font-size: 16px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 8px;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.expofp-sidebar-left .close-btn:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .expofp-sidebar {
+    width: 100vw;
+    right: -100vw;
+  }
+  
+  .expofp-sidebar.active {
+    right: 0;
+  }
+  
+  .expofp-sidebar-left {
+    position: absolute;
+    z-index: 20;
+    height: 100%;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15);
+  }
 }

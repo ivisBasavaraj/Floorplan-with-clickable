@@ -6,12 +6,15 @@ import { useCanvasStore } from '../../store/canvasStore';
 import { BoothElement, DoorElement, FurnitureElement, PlantElement, ShapeElement } from '../../types/canvas';
 import { PathControls } from '../canvas/PathControls';
 
+import { EnhancedMapView } from './EnhancedMapView';
+
 interface ViewMode3DProps {
   onBoothClick: (boothId: string) => void;
   selectedBoothId?: string;
+  useMapMode?: boolean;
 }
 
-export const ViewMode3D: React.FC<ViewMode3DProps> = ({ onBoothClick, selectedBoothId }) => {
+export const ViewMode3D: React.FC<ViewMode3DProps> = ({ onBoothClick, selectedBoothId, useMapMode = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { elements, grid, canvasSize } = useCanvasStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -480,7 +483,8 @@ export const ViewMode3D: React.FC<ViewMode3DProps> = ({ onBoothClick, selectedBo
               } else {
                 // Normal click behavior - only show info for booths
                 if (clickedElement.type === 'booth') {
-                  onBoothClick(id);
+                  const booth = clickedElement as BoothElement;
+                  onBoothClick(booth.number || id);
                 }
               }
             }
@@ -604,6 +608,18 @@ export const ViewMode3D: React.FC<ViewMode3DProps> = ({ onBoothClick, selectedBo
       sceneRef.current.add(pathLineRef.current);
     }
   }, [pathPoints]);
+  
+
+
+  // If using map mode, render enhanced Leaflet map like /enhanced-map
+  if (useMapMode) {
+    return <EnhancedMapView 
+      elements={elements} 
+      onBoothClick={onBoothClick} 
+      selectedBoothId={selectedBoothId} 
+      startIn3D={true}
+    />;
+  }
   
   return (
     <div ref={containerRef} className="w-full h-full relative">

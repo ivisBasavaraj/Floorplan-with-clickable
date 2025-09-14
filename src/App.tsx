@@ -15,6 +15,9 @@ import FloorPlanDemos from './pages/FloorPlanDemos';
 import ExhibitionFloorPlan from './components/ExhibitionFloorPlan';
 import { ExhibitionDemo } from './pages/ExhibitionDemo';
 import { ExpoFPReplica } from './components/ExpoFPReplica';
+import ExhibitionMapDemo from './pages/ExhibitionMapDemo';
+import EnhancedMapDemo from './pages/EnhancedMapDemo';
+import FloorPlanDesignerDemo from './pages/FloorPlanDesignerDemo';
 
 function App() {
   // Initialize auth on app load
@@ -68,6 +71,15 @@ function App() {
         
         {/* ExpoFP Replica Demo */}
         <Route path="/expofp-demo" element={<ExpoFPReplica />} />
+        
+        {/* Exhibition Floor Plan on Map */}
+        <Route path="/exhibition-map" element={<ExhibitionMapDemo />} />
+        
+        {/* Enhanced Leaflet Map with Canvas Layer */}
+        <Route path="/enhanced-map" element={<EnhancedMapDemo />} />
+        
+        {/* Leaflet Floor Plan Designer */}
+        <Route path="/floor-plan-designer" element={<FloorPlanDesignerDemo />} />
         
         {/* Redirect any unknown routes to landing page or dashboard based on auth status */}
         <Route path="*" element={<LandingRedirect />} />

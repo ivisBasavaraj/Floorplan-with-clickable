@@ -79,6 +79,8 @@ export interface PlainLeafletMapProps {
   imageBounds?: [[number, number], [number, number]];
   center?: [number, number];
   zoom?: number;
+  onBoothHover?: (booth: any) => void;
+  onBoothClick?: (booth: any) => void;
 }
 
 const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
@@ -86,6 +88,8 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
   imageBounds,
   center = [12.9716, 77.5946],
   zoom = 16,
+  onBoothHover,
+  onBoothClick,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -93,6 +97,12 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // Clear any existing map instance
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
 
     // Init map
     const map = L.map(containerRef.current, {
@@ -103,10 +113,10 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
     mapRef.current = map;
 
     // Base layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      subdomains: 'abcd',
       maxZoom: 20,
-      attribution: '\u00A9 OpenStreetMap contributors',
-      tileSize: 256,
     }).addTo(map);
 
     // Canvas overlay in overlay pane
@@ -117,11 +127,52 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
     canvas.style.position = 'absolute';
     canvas.style.top = '0';
     canvas.style.left = '0';
-    canvas.style.pointerEvents = 'none';
+    canvas.style.pointerEvents = onBoothHover || onBoothClick ? 'auto' : 'none';
     map.getPanes().overlayPane.appendChild(canvas);
     canvasRef.current = canvas;
 
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+
+    const getBoothAtPoint = (e: MouseEvent) => {
+      if (!canvas) return null;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const boothBounds = (canvas as any).boothBounds || [];
+      for (const bounds of boothBounds) {
+        if (x >= bounds.x && x <= bounds.x + bounds.width &&
+            y >= bounds.y && y <= bounds.y + bounds.height) {
+          return bounds.element;
+        }
+      }
+      return null;
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      const booth = getBoothAtPoint(e);
+      if (booth && onBoothClick) {
+        onBoothClick(booth);
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const booth = getBoothAtPoint(e);
+      if (onBoothHover) {
+        onBoothHover(booth);
+      }
+    };
+
+    const handleMouseOut = () => {
+      if (onBoothHover) {
+        onBoothHover(null);
+      }
+    };
+
+    if (onBoothClick) canvas.addEventListener('click', handleClick);
+    if (onBoothHover) {
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('mouseout', handleMouseOut);
+    }
 
     const redraw = () => {
       if (!mapRef.current || !canvasRef.current) return;
@@ -142,6 +193,11 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
       map.off('move', redraw);
       map.off('zoom', redraw);
       map.off('resize', redraw);
+      if (canvas) {
+        canvas.removeEventListener('click', handleClick);
+        canvas.removeEventListener('mousemove', handleMouseMove);
+        canvas.removeEventListener('mouseout', handleMouseOut);
+      }
       if (canvasRef.current && canvasRef.current.parentNode) {
         canvasRef.current.parentNode.removeChild(canvasRef.current);
       }

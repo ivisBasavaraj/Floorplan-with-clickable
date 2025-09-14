@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '../components/icons/FontAwesomeIcon';
-import MapView2D from '../components/preview/MapView2D';
+
+import SVGViewBoxMap from '../components/preview/SVGViewBoxMap';
 import { ViewMode2D } from '../components/preview/ViewMode2D';
 import { ViewMode3D } from '../components/preview/ViewMode3D';
 import { UserBoothInfoPopup } from '../components/user/UserBoothInfoPopup';
@@ -500,13 +501,28 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
     }
   };
 
-  const handleBoothClick = (boothId: string) => {
+  const handleBoothClick = async (boothId: string) => {
     const booth = elements.find(
       (element) => element.id === boothId && element.type === 'booth'
     ) as BoothElement | undefined;
     
     if (booth) {
       setSelectedBooth(booth);
+      
+      // Try to fetch additional exhibitor data from backend
+      try {
+        const response = await fetch(`/api/exhibitors/${booth.number}`);
+        if (response.ok) {
+          const exhibitorData = await response.json();
+          // Update company data with backend response if available
+          const updatedCompany = companies.find(c => c.booth_number === booth.number);
+          if (updatedCompany) {
+            Object.assign(updatedCompany, exhibitorData);
+          }
+        }
+      } catch (error) {
+        console.log('Backend exhibitor data not available, using local data');
+      }
     }
   };
 
@@ -719,12 +735,12 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
       
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Enhanced Left Sidebar - Company Listings */}
-        <div className={`expofp-sidebar transition-all duration-300 ${
+        {/* Left Sidebar - Exhibitor List */}
+        <div className={`expofp-sidebar-left transition-all duration-300 ${
           sidebarCollapsed ? 'w-0 overflow-hidden' : 'w-80'
         }`}>
           <div className="h-full flex flex-col">
-            {/* Professional Search Header */}
+            {/* Header */}
             <div className="sidebar-header">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -764,7 +780,7 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
               </div>
             </div>
 
-            {/* Enhanced Company List */}
+            {/* Company List */}
             <div className="exhibitor-list">
               {filteredCompanies.map((company) => (
                 <div
@@ -802,26 +818,10 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
                 </div>
               ))}
             </div>
-            
-            {/* Sponsor Logos Section */}
-            <div className="p-4 border-t border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Sponsors</h3>
-              <div className="grid grid-cols-4 gap-2">
-                {sponsors.map((sponsor) => (
-                  <div key={sponsor.id} className="flex items-center justify-center p-1 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer">
-                    <img
-                      src={sponsor.logo}
-                      alt={sponsor.name}
-                      className="w-8 h-8 object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
-        {/* Main Canvas Area */}
+        {/* Map Area */}
         <div className="expofp-main flex-1 relative">
           {/* Sidebar Toggle Button */}
           {sidebarCollapsed && (
@@ -859,7 +859,13 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
                     selectedBoothId={selectedBooth?.id}
                   />
                 ) : viewMode === 'map' ? (
-                  <MapView2D />
+                  <div className="h-full min-h-[400px]">
+                    <ViewMode3D 
+                      onBoothClick={handleBoothClick} 
+                      selectedBoothId={selectedBooth?.id}
+                      useMapMode={true}
+                    />
+                  </div>
                 ) : viewMode === '3d' ? (
                   <div className="h-full min-h-[400px]">
                     <ViewMode3D 
@@ -868,15 +874,6 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
                     />
                   </div>
                 ) : null}
-                
-                {/* Booth info popup */}
-                {selectedBooth && (
-                  <UserBoothInfoPopup 
-                    booth={selectedBooth} 
-                    company={companies.find(c => c.booth_number === selectedBooth.number)}
-                    onClose={closeBoothInfo} 
-                  />
-                )}
               </>
             ) : (
               <div className="flex items-center justify-center h-full glass-panel m-6 rounded-2xl">
@@ -887,6 +884,14 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
               </div>
             )}
           </div>
+
+          {selectedBooth && (
+            <UserBoothInfoPopup
+              booth={selectedBooth}
+              company={companies.find(c => c.booth_number === selectedBooth.number)}
+              onClose={closeBoothInfo}
+            />
+          )}
         </div>
 
 

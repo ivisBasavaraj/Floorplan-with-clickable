@@ -12,8 +12,12 @@ interface Booth {
   section?: string;
 }
 
+
+
 const ExhibitionFloorPlan: React.FC = () => {
   const [selectedBooth, setSelectedBooth] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'2d' | '3d' | 'map'>('2d');
+  const [showBoothInfo, setShowBoothInfo] = useState(true);
 
   const booths: Booth[] = [
     // Sustainable Construction Section
@@ -60,10 +64,41 @@ const ExhibitionFloorPlan: React.FC = () => {
   };
 
   return (
-    <div className="exhibition-floor-plan">
-      <div className="floor-plan-container">
-        {/* Background grid and structure */}
-        <div className="floor-background">
+    <>
+      <div id="map" className="exhibition-floor-plan">
+        {/* View Mode Controls */}
+        <div className="view-controls">
+          <button 
+            className={`view-btn ${viewMode === '2d' ? 'active' : ''}`}
+            onClick={() => setViewMode('2d')}
+          >
+            2D
+          </button>
+          <div className="view-mode-group">
+            <button 
+              className={`view-btn ${viewMode === '3d' ? 'active' : ''}`}
+              onClick={() => setViewMode('3d')}
+            >
+              3D
+            </button>
+            <button 
+              className={`view-btn ${viewMode === 'map' ? 'active' : ''}`}
+              onClick={() => setViewMode('map')}
+            >
+              Map
+            </button>
+          </div>
+          <button 
+            className={`view-btn ${showBoothInfo ? 'active' : ''}`}
+            onClick={() => setShowBoothInfo(!showBoothInfo)}
+            title={showBoothInfo ? 'Hide booth info' : 'Show booth info'}
+          >
+            Info
+          </button>
+        </div>
+        
+        <div className="floor-plan-container">
+          <div className="floor-background">
           {/* Blue pathway */}
           <svg className="pathway-overlay" viewBox="0 0 1200 600">
             <path
@@ -109,7 +144,7 @@ const ExhibitionFloorPlan: React.FC = () => {
               }}
               onClick={() => handleBoothClick(booth.id)}
             >
-              {booth.name && <span className="booth-label">{booth.name}</span>}
+              {showBoothInfo && booth.name && <span className="booth-label">{booth.name}</span>}
             </div>
           ))}
           
@@ -128,9 +163,13 @@ const ExhibitionFloorPlan: React.FC = () => {
               <span>Reserved</span>
             </div>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+      
+
+
+    </>
   );
 };
 
