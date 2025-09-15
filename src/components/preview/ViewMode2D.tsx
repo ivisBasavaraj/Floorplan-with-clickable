@@ -156,6 +156,19 @@ export const ViewMode2D: React.FC<ViewMode2DProps> = ({ onBoothClick, selectedBo
     const clickedElement = elements.find(element => element.id === id);
     
     if (clickedElement && clickedElement.type === 'booth') {
+      // Add ExpofP-style visual feedback
+      const boothElement = e.target;
+      if (boothElement) {
+        // Add pulse animation class
+        boothElement.to({
+          scaleX: 1.05,
+          scaleY: 1.05,
+          duration: 0.1,
+          yoyo: true,
+          repeat: 1
+        });
+      }
+      
       if (pathMode) {
         // In path mode, handle booth selection for pathfinding
         handleBoothSelect(id);
