@@ -11,3 +11,9 @@ opencv-python==4.8.1.78
 numpy==1.24.3
 Pillow==10.0.1
 shapely==2.0.1
+# YOLOv8 / Ultralytics
+ultralytics==8.2.103
+# torch is required by ultralytics; you may want to install a CUDA-specific build
+# For CPU-only (works but slower):
+torch==2.3.1
+torchvision==0.18.1

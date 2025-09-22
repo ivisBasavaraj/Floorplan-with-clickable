@@ -172,7 +172,7 @@ def _detect_sub_booths_in_rect(x, y, w, h, blue_lines):
     try:
         sub_booths = []
         
-        if not blue_lines or len(blue_lines) == 0:
+        if blue_lines is None or len(blue_lines) == 0:
             print(f"No blue lines found for booth at ({x}, {y})")
             return sub_booths
         
@@ -182,13 +182,30 @@ def _detect_sub_booths_in_rect(x, y, w, h, blue_lines):
         
         for line in blue_lines:
             try:
-                x1, y1, x2, y2 = line[0]
+                if isinstance(line, np.ndarray):
+                    if line.ndim == 2 and line.shape[0] == 1 and line.shape[1] == 4:
+                        x1, y1, x2, y2 = line[0]
+                    elif line.ndim == 1 and line.shape[0] == 4:
+                        x1, y1, x2, y2 = line
+                    else:
+                        continue
+                elif isinstance(line, (list, tuple)) and len(line) == 4:
+                    x1, y1, x2, y2 = line
+                else:
+                    continue
+                    
                 # Check if line is inside the booth rectangle (with margin)
-                if ((x - margin <= x1 <= x + w + margin) and (y - margin <= y1 <= y + h + margin)) or \
-                   ((x - margin <= x2 <= x + w + margin) and (y - margin <= y2 <= y + h + margin)):
-                    internal_lines.append(line[0])
+                line_in_booth = False
+                if (x - margin <= x1 <= x + w + margin) and (y - margin <= y1 <= y + h + margin):
+                    line_in_booth = True
+                elif (x - margin <= x2 <= x + w + margin) and (y - margin <= y2 <= y + h + margin):
+                    line_in_booth = True
+                    
+                if line_in_booth:
+                    internal_lines.append([x1, y1, x2, y2])
                     print(f"Found internal line in booth ({x},{y}): ({x1},{y1}) to ({x2},{y2})")
-            except:
+            except Exception as e:
+                print(f"Error processing line: {e}")
                 continue
         
         print(f"Found {len(internal_lines)} internal lines for booth at ({x}, {y})")
@@ -202,11 +219,14 @@ def _detect_sub_booths_in_rect(x, y, w, h, blue_lines):
             horizontal_count = 0
             
             for line in internal_lines:
-                x1, y1, x2, y2 = line
-                if abs(x2 - x1) < abs(y2 - y1):  # More vertical
-                    vertical_count += 1
-                else:
-                    horizontal_count += 1
+                try:
+                    x1, y1, x2, y2 = line
+                    if abs(x2 - x1) < abs(y2 - y1):  # More vertical
+                        vertical_count += 1
+                    else:
+                        horizontal_count += 1
+                except:
+                    continue
             
             if vertical_count > horizontal_count:
                 # Split vertically

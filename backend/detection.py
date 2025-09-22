@@ -3,12 +3,12 @@ import numpy as np
 import math
 from typing import List, Dict, Tuple, Any
 
-def detect_rects_by_color(image_path: str, min_area: int = 1500, 
-                         hsv_lower: List[int] = [95, 40, 40], 
-                         hsv_upper: List[int] = [140, 255, 255], 
-                         kernel_size: int = 9) -> List[Dict[str, Any]]:
+def detect_rects_by_color(image_path: str, min_area: int = 800, 
+                         hsv_lower: List[int] = [90, 30, 30], 
+                         hsv_upper: List[int] = [150, 255, 255], 
+                         kernel_size: int = 5) -> List[Dict[str, Any]]:
     """
-    Detect blue-filled booths (rectangles) via HSV color segmentation.
+    Detect blue-filled booths and rectangles without color via multiple detection methods.
     
     Args:
         image_path: Path to the input image
@@ -21,9 +21,9 @@ def detect_rects_by_color(image_path: str, min_area: int = 1500,
         List of booth dictionaries with id, x, y, w, h, score
     
     Tuning parameters:
-    - Adjust hsv_lower/hsv_upper for different blue shades
-    - Increase min_area to filter out small noise
-    - Adjust kernel_size for morphological operations (larger = more aggressive cleanup)
+    - Adjusted hsv_lower/hsv_upper for broader blue detection
+    - Reduced min_area to catch smaller booths
+    - Added grayscale rectangle detection for non-colored rectangles
     """
     try:
         # Load image
@@ -31,43 +31,157 @@ def detect_rects_by_color(image_path: str, min_area: int = 1500,
         if image is None:
             return []
         
-        # Convert to HSV
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        
-        # Create mask for blue color
-        lower_blue = np.array(hsv_lower)
-        upper_blue = np.array(hsv_upper)
-        mask = cv2.inRange(hsv, lower_blue, upper_blue)
-        
-        # Morphological operations to clean up the mask
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)  # Fill gaps
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)   # Remove noise
-        
-        # Find contours
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
         rects = []
+        
+        # Method 1: Blue Color Detection (HSV + LAB, more tolerant to lighting)
+        # Smooth a little to reduce pixel noise while keeping edges
+        image_blur = cv2.GaussianBlur(image, (3, 3), 0)
+        hsv = cv2.cvtColor(image_blur, cv2.COLOR_BGR2HSV)
+        lab = cv2.cvtColor(image_blur, cv2.COLOR_BGR2LAB)
+
+        # HSV: broadened blue ranges with lower S/V thresholds to capture light/dark blues
+        blue_ranges = [
+            ([85, 15, 40], [135, 255, 255]),  # broad blue/cyan
+            ([95, 20, 50], [130, 255, 255]),  # classic blue
+            ([105, 10, 30], [150, 255, 255])  # very desaturated dark/sky blues
+        ]
+
+        hsv_mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+        for lower, upper in blue_ranges:
+            lower_blue = np.array(lower, dtype=np.uint8)
+            upper_blue = np.array(upper, dtype=np.uint8)
+            mask = cv2.inRange(hsv, lower_blue, upper_blue)
+            hsv_mask = cv2.bitwise_or(hsv_mask, mask)
+
+        # LAB: blue has lower b-channel values (toward 0). Combine with HSV mask to be robust.
+        b_channel = lab[:, :, 2]
+        lab_mask = cv2.inRange(b_channel, 0, 140)  # 0..140 tends to capture blues (tuneable)
+
+        combined_mask = cv2.bitwise_or(hsv_mask, lab_mask)
+
+        # Clean up the mask
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
+        combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, kernel)
+        combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_OPEN, kernel)
+
+        # Find blue contours
+        contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
         for i, contour in enumerate(contours):
             area = cv2.contourArea(contour)
             if area >= min_area:
-                # Get bounding rectangle
                 x, y, w, h = cv2.boundingRect(contour)
-                
-                # Calculate confidence score based on area and rectangularity
                 rect_area = w * h
                 rectangularity = area / rect_area if rect_area > 0 else 0
-                score = min(1.0, rectangularity * (area / min_area))
-                
+
+                # Higher score for blue rectangles
+                score = min(1.0, rectangularity * (area / min_area) * 1.2)
+
                 rects.append({
-                    "id": i + 1,
+                    "id": len(rects) + 1,
                     "x": int(x),
                     "y": int(y),
                     "w": int(w),
                     "h": int(h),
-                    "score": round(score, 3)
+                    "score": round(score, 3),
+                    "type": "blue"
                 })
         
+        # Method 2: Edge-based Rectangle Detection for non-colored rectangles
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Apply adaptive threshold to handle varying lighting
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        
+        # Find contours in thresholded image
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area >= min_area:
+                # Approximate contour to polygon
+                epsilon = 0.02 * cv2.arcLength(contour, True)
+                approx = cv2.approxPolyDP(contour, epsilon, True)
+                
+                # Check if it's roughly rectangular (4 corners)
+                if len(approx) >= 4:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    rect_area = w * h
+                    rectangularity = area / rect_area if rect_area > 0 else 0
+                    
+                    # Check if this rectangle overlaps with existing blue rectangles
+                    overlaps = False
+                    for existing_rect in rects:
+                        if (abs(x - existing_rect['x']) < 20 and 
+                            abs(y - existing_rect['y']) < 20 and
+                            abs(w - existing_rect['w']) < 40 and
+                            abs(h - existing_rect['h']) < 40):
+                            overlaps = True
+                            break
+                    
+                    if not overlaps and rectangularity > 0.7:  # Good rectangularity
+                        score = min(1.0, rectangularity * (area / min_area))
+                        
+                        rects.append({
+                            "id": len(rects) + 1,
+                            "x": int(x),
+                            "y": int(y),
+                            "w": int(w),
+                            "h": int(h),
+                            "score": round(score, 3),
+                            "type": "edge"
+                        })
+        
+        # Method 3: Canny Edge Detection for outlined rectangles
+        edges = cv2.Canny(gray, 50, 150)
+        
+        # Dilate edges to close gaps
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        edges = cv2.dilate(edges, kernel, iterations=1)
+        
+        # Find contours in edge image
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area >= min_area:
+                epsilon = 0.02 * cv2.arcLength(contour, True)
+                approx = cv2.approxPolyDP(contour, epsilon, True)
+                
+                if len(approx) >= 4:
+                    x, y, w, h = cv2.boundingRect(contour)
+                    rect_area = w * h
+                    rectangularity = area / rect_area if rect_area > 0 else 0
+                    
+                    # Check for overlaps
+                    overlaps = False
+                    for existing_rect in rects:
+                        if (abs(x - existing_rect['x']) < 30 and 
+                            abs(y - existing_rect['y']) < 30 and
+                            abs(w - existing_rect['w']) < 50 and
+                            abs(h - existing_rect['h']) < 50):
+                            overlaps = True
+                            break
+                    
+                    if not overlaps and rectangularity > 0.6:
+                        score = min(1.0, rectangularity * (area / min_area) * 0.8)
+                        
+                        rects.append({
+                            "id": len(rects) + 1,
+                            "x": int(x),
+                            "y": int(y),
+                            "w": int(w),
+                            "h": int(h),
+                            "score": round(score, 3),
+                            "type": "canny"
+                        })
+        
+        # Sort by score and re-assign IDs
+        rects.sort(key=lambda r: r['score'], reverse=True)
+        for i, rect in enumerate(rects):
+            rect['id'] = i + 1
+        
+        print(f"Detected {len(rects)} rectangles using multiple methods")
         return rects
     
     except Exception as e:

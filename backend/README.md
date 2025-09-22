@@ -227,6 +227,46 @@ curl -X GET http://localhost:5000/api/floorplans \
 - `FLASK_ENV`: Development/production environment
 - `FLASK_DEBUG`: Enable/disable debug mode
 - `CORS_ORIGINS`: Allowed CORS origins (comma-separated)
+- `DETECTION_BACKEND`: Toggle detection backend. Allowed values: `yolo` (default) or `opencv`.
+- `YOLO_MODEL_PATH`: Optional Ultralytics model path (e.g., `yolov8n.pt`, `yolov8s.pt`, or a custom `.pt`).
+
+### Selecting Detection Backend
+
+You can switch the detection backend without code changes:
+
+1. Set in `.env`:
+   ```ini
+   DETECTION_BACKEND=yolo   # or opencv
+   ```
+2. Or override per-request:
+   - Query parameter: `POST /detect-from-upload?backend=yolo` or `?backend=opencv`
+   - JSON body field: `{ "filename": "...", "backend": "opencv" }`
+
+The endpoint response includes the `backend` field indicating which backend was used.
+
+### Ultralytics/Torch Installation Matrix (GPU/CPU)
+
+- CPU-only (simplest, slower):
+  ```bash
+  pip install torch==2.3.1 torchvision==0.18.1
+  pip install ultralytics==8.2.103
+  ```
+- NVIDIA GPU (CUDA): install versions matching your CUDA toolkit (see https://pytorch.org/get-started/locally/). Examples:
+  - CUDA 12.1:
+    ```bash
+    pip install --index-url https://download.pytorch.org/whl/cu121 torch==2.3.1 torchvision==0.18.1
+    pip install ultralytics==8.2.103
+    ```
+  - CUDA 11.8:
+    ```bash
+    pip install --index-url https://download.pytorch.org/whl/cu118 torch==2.3.1 torchvision==0.18.1
+    pip install ultralytics==8.2.103
+    ```
+
+Notes:
+- Verify GPU is visible: `python -c "import torch; print(torch.cuda.is_available())"`
+- First model run will download weights if `YOLO_MODEL_PATH` isn’t present.
+- For best speed, prefer `yolov8s.pt` or larger on GPU; use `yolov8n.pt` on CPU.
 
 ### Database Collections
 

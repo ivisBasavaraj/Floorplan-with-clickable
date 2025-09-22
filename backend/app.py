@@ -19,6 +19,7 @@ from detection import detect_rects_by_color, detect_walls_by_lines, draw_overlay
 from detection_hierarchy import detect_rects_with_hierarchy, build_groups, draw_overlay_with_hierarchy
 from detection_subsections import detect_with_subsections
 from subsection_manager import detect_blue_divisions_in_booth, create_subsection_ids
+from yolo_detect import detect_booths
 
 def create_app():
     app = Flask(__name__)
@@ -83,9 +84,18 @@ def create_app():
             except Exception:
                 return jsonify({'message': 'Invalid image file'}), 400
             
-            # Run detection
+            # Run detection with selectable backend (YOLOv8 or OpenCV)
             try:
-                rects = detect_rects_by_color(file_path, min_area=1500)
+                # Allow override via query (?backend=yolo|opencv) or JSON body { backend: "yolo|opencv" }
+                backend_choice = (request.args.get('backend') or (data.get('backend') if isinstance(data, dict) else None) or Config.DETECTION_BACKEND)
+                backend_choice = (backend_choice or 'yolo').strip().lower()
+
+                if backend_choice == 'opencv':
+                    rects = detect_rects_by_color(file_path, min_area=800)
+                else:
+                    # default to YOLO
+                    rects = detect_booths(file_path, conf=0.3, iou=0.5)
+
                 walls = detect_walls_by_lines(file_path)
                 
                 # Generate overlay
@@ -99,7 +109,8 @@ def create_app():
                     'imageWidth': image_width,
                     'imageHeight': image_height,
                     'overlay': f'/uploads/{overlay_filename}',
-                    'filename': filename
+                    'filename': filename,
+                    'backend': backend_choice
                 }), 200
                 
             except Exception as e:
