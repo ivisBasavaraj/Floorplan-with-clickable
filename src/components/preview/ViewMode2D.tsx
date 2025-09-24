@@ -200,18 +200,27 @@ export const ViewMode2D: React.FC<ViewMode2DProps> = ({ onBoothClick, selectedBo
           onDragMove={handleDragMove}
           style={{ background: 'transparent' }}
         >
-          {/* ExpofP-style Background Layer */}
+          {/* Background Layer with white canvas area */}
           <Layer>
+            {/* White background covering only canvas area */}
+            <Rect
+              x={0}
+              y={0}
+              width={canvasSize.width}
+              height={canvasSize.height}
+              fill="#ffffff"
+              stroke="#e2e8f0"
+              strokeWidth={1}
+            />
 
-            
-            {/* Background */}
+            {/* Background image (if any), drawn on top of white background */}
             {backgroundImage && (
               <BackgroundImage
                 settings={backgroundImage}
               />
             )}
             
-            {/* ExpofP-style Grid */}
+            {/* Grid */}
             {grid.enabled && (
               <CanvasGrid
                 enabled={grid.enabled}

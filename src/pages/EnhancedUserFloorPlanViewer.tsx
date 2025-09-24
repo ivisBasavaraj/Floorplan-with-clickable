@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '../components/icons/FontAwesomeIcon';
 
 import SVGViewBoxMap from '../components/preview/SVGViewBoxMap';
 import { ViewMode2D } from '../components/preview/ViewMode2D';
 import { ViewMode3D } from '../components/preview/ViewMode3D';
+import PlainLeafletMap from '../components/PlainLeafletMap';
+import { publicHallAPI, publicFloorPlanAPI } from '../services/api';
 import { UserBoothInfoPopup } from '../components/user/UserBoothInfoPopup';
 import { UserSponsorHeader } from '../components/user/UserSponsorHeader';
 import { ViewToggle } from '../components/viewer/ViewToggle';
-import { floorPlanAPI, publicFloorPlanAPI } from '../services/api';
+import { floorPlanAPI } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useCanvasStore } from '../store/canvasStore';
 import { getBrandLogo } from '../utils/brandLogos';
@@ -74,13 +76,28 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
   const [sponsors, setSponsors] = useState<SponsorLogo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'2d' | '3d' | 'map'>('2d');
+  const [viewMode, setViewMode] = useState<'2d' | '3d' | 'map'>('map');
   const [selectedFloor, setSelectedFloor] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedBooth, setSelectedBooth] = useState<BoothElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Gate floor plan visibility until a hall is chosen on map
+  const [selectedHallId, setSelectedHallId] = useState<string | null>(null);
+  const [halls, setHalls] = useState<{ id: string; name: string; polygon: [number, number][]; color?: string }[]>([
+    { id: 'hall1', name: 'BIEC Hall 1', color: '#2563eb', polygon: [
+      [13.06352, 77.47472], [13.06355, 77.47563], [13.06293, 77.47568], [13.06289, 77.47477]
+    ]},
+    { id: 'hall2', name: 'BIEC Hall 2', color: '#16a34a', polygon: [
+      [13.06294, 77.47475], [13.06298, 77.47566], [13.06232, 77.47571], [13.06227, 77.47480]
+    ]},
+    { id: 'hall3', name: 'BIEC Hall 3', color: '#f59e0b', polygon: [
+      [13.06232, 77.47479], [13.06236, 77.47569], [13.06172, 77.47574], [13.06167, 77.47484]
+    ]},
+  ]);
+  const [planPicker, setPlanPicker] = useState<{ open: boolean; hallId: string | null; plans: FloorPlan[] }>({ open: false, hallId: null, plans: [] });
 
   // Canvas store
   const { 
@@ -110,6 +127,10 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
     if (mode === '2d' || mode === '3d' || mode === 'map') {
       setViewMode(mode);
     }
+    // If map mode is chosen via URL, require hall selection before showing floor plan
+    if (mode === 'map') {
+      setSelectedHallId(null);
+    }
   }, [searchParams]);
 
   // Update URL when view mode changes
@@ -128,6 +149,17 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
   useEffect(() => {
     loadFloorPlans();
     loadSponsorsFromBackend();
+    // Fetch public halls for map gating
+    (async () => {
+      try {
+        const res = await publicHallAPI.getPublicHalls();
+        if (res.success && res.data.halls && res.data.halls.length > 0) {
+          setHalls(res.data.halls);
+        }
+      } catch (e) {
+        console.error('Failed to load halls', e);
+      }
+    })();
   }, [user]); // Reload when user authentication changes
 
   // Load companies after elements are loaded
@@ -620,7 +652,8 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
     );
   }
 
-  if (floorPlans.length === 0) {
+  // If there are no global floor plans, still allow map gating view
+  if (floorPlans.length === 0 && viewMode !== 'map') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto">
@@ -851,21 +884,44 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
 
           {/* Floor Plan Canvas / Map */}
           <div className="h-full">
-            {selectedFloorPlan ? (
+            {viewMode === 'map' ? (
+              <div className="h-full min-h-[400px] relative">
+                <PlainLeafletMap
+                  drawBooths={(ctx) => { /* no booths drawn in user map gate */ }}
+                  halls={halls}
+                  onHallClick={async (hall) => {
+                    setSelectedHallId(hall.id);
+                    // Find floor plans for this specific hall only
+                    const hallPlans = floorPlans.filter(plan => plan.hall_id === hall.id);
+                    if (hallPlans.length > 0) {
+                      await loadFloorPlanDetails(hallPlans[0]);
+                      setViewMode('2d');
+                    } else {
+                      // Fallback: load any available floor plan for now
+                      if (floorPlans.length > 0) {
+                        await loadFloorPlanDetails(floorPlans[0]);
+                        setViewMode('2d');
+                      } else {
+                        alert(`No floor plan available for ${hall.name}`);
+                      }
+                    }
+                  }}
+                  center={[13.062639, 77.475917]}
+                  zoom={16}
+                />
+                {(!halls || halls.length === 0) && (
+                  <div className="absolute top-4 left-4 bg-white/90 px-3 py-2 rounded shadow text-sm">
+                    No public halls available. Please create halls in admin and mark them public.
+                  </div>
+                )}
+              </div>
+            ) : selectedFloorPlan ? (
               <>
                 {viewMode === '2d' ? (
                   <ViewMode2D 
                     onBoothClick={handleBoothClick} 
                     selectedBoothId={selectedBooth?.id}
                   />
-                ) : viewMode === 'map' ? (
-                  <div className="h-full min-h-[400px]">
-                    <ViewMode3D 
-                      onBoothClick={handleBoothClick} 
-                      selectedBoothId={selectedBooth?.id}
-                      useMapMode={true}
-                    />
-                  </div>
                 ) : viewMode === '3d' ? (
                   <div className="h-full min-h-[400px]">
                     <ViewMode3D 
@@ -878,8 +934,7 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
             ) : (
               <div className="flex items-center justify-center h-full glass-panel m-6 rounded-2xl">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-500 mx-auto mb-6"></div>
-                  <p className="text-gray-700 font-medium">Loading floor plan...</p>
+                  <p className="text-gray-700 font-medium">Select a hall to load a floor plan.</p>
                 </div>
               </div>
             )}
@@ -891,6 +946,49 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
               company={companies.find(c => c.booth_number === selectedBooth.number)}
               onClose={closeBoothInfo}
             />
+          )}
+
+          {/* Simple Plan Picker Modal */}
+          {planPicker.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <h3 className="text-lg font-semibold mb-4">Choose a floor plan</h3>
+                {planPicker.plans.length === 0 ? (
+                  <p className="text-gray-600">No published plans available for this hall.</p>
+                ) : (
+                  <ul className="space-y-2 mb-4">
+                    {planPicker.plans.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          className="w-full text-left px-4 py-2 rounded border hover:bg-gray-50"
+                          onClick={async () => {
+                            await loadFloorPlanDetails(p);
+                            setPlanPicker({ open: false, hallId: null, plans: [] });
+                            setViewMode('2d');
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{p.name}</span>
+                            <span className="text-xs text-gray-500">{new Date(p.last_modified).toLocaleDateString()}</span>
+                          </div>
+                          {p.description && (
+                            <div className="text-sm text-gray-600 mt-1 truncate">{p.description}</div>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button
+                    className="px-4 py-2 rounded border"
+                    onClick={() => setPlanPicker({ open: false, hallId: null, plans: [] })}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

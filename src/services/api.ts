@@ -219,6 +219,27 @@ export const publicFloorPlanAPI = {
   },
 };
 
+export const publicHallAPI = {
+  async getPublicHalls(params?: { event_id?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.event_id) queryParams.set('event_id', params.event_id);
+    const response = await fetch(
+      `${API_BASE_URL}/public/halls?${queryParams}`,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    const data = await response.json();
+    return { success: response.ok, data };
+  },
+
+  async getHallFloorPlans(hallId: string) {
+    const response = await fetch(`${API_BASE_URL}/public/halls/${hallId}/floorplans`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    return { success: response.ok, data };
+  },
+};
+
 // Area Maps API
 export const areaMapAPI = {
   async getAreaMaps() {

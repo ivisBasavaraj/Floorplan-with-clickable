@@ -4,19 +4,23 @@ import { ViewMode2D } from './ViewMode2D';
 import { ViewMode3D } from './ViewMode3D';
 import { BoothInfoPopup } from './BoothInfoPopup';
 import { BoothElement } from '../../types/canvas';
+import { SVGViewBoxMap } from '../preview/SVGViewBoxMap';
 
 interface FloorPlanPreviewProps {
   onClose: () => void;
 }
 
+type PreviewMode = '2d' | '3d' | 'svg';
+
 export const FloorPlanPreview: React.FC<FloorPlanPreviewProps> = ({ onClose }) => {
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [viewMode, setViewMode] = useState<PreviewMode>('2d');
   const [selectedBooth, setSelectedBooth] = useState<BoothElement | null>(null);
   const { elements, setViewerMode } = useCanvasStore();
 
   // Set viewer mode when component mounts and reset when unmounting
   useEffect(() => {
-    setViewerMode(viewMode);
+    // Treat 'svg' as 2d in the global viewerMode
+    setViewerMode(viewMode === 'svg' ? '2d' : viewMode);
     return () => setViewerMode('editor');
   }, [viewMode, setViewerMode]);
 
@@ -57,6 +61,16 @@ export const FloorPlanPreview: React.FC<FloorPlanPreviewProps> = ({ onClose }) =
               </button>
               <button
                 className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  viewMode === 'svg'
+                    ? 'bg-white shadow-sm text-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                onClick={() => setViewMode('svg')}
+              >
+                SVG View
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
                   viewMode === '3d'
                     ? 'bg-white shadow-sm text-blue-600'
                     : 'text-gray-600 hover:text-gray-900'
@@ -92,7 +106,9 @@ export const FloorPlanPreview: React.FC<FloorPlanPreviewProps> = ({ onClose }) =
         
         {/* Preview content */}
         <div className="flex-1 overflow-hidden relative">
-          {viewMode === '2d' ? (
+          {viewMode === 'svg' ? (
+            <SVGViewBoxMap onBoothClick={handleBoothClick} />
+          ) : viewMode === '2d' ? (
             <ViewMode2D onBoothClick={handleBoothClick} />
           ) : (
             <ViewMode3D onBoothClick={handleBoothClick} />
@@ -107,9 +123,9 @@ export const FloorPlanPreview: React.FC<FloorPlanPreviewProps> = ({ onClose }) =
         {/* Footer with instructions */}
         <div className="p-3 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
           <p>
-            {viewMode === '2d' 
-              ? 'Click on any booth to view details. Use mouse wheel to zoom and drag to pan. Use the Path Mode to find routes between booths.' 
-              : 'Click on any booth to view details. Use mouse to rotate the view and scroll to zoom. Use the Path Mode to find routes between booths.'}
+            {viewMode === '3d'
+              ? 'Click on any booth to view details. Use mouse to rotate the view and scroll to zoom. Use the Path Mode to find routes between booths.'
+              : 'Click on any booth to view details. Use mouse wheel to zoom and drag to pan. Use the Path Mode to find routes between booths.'}
           </p>
         </div>
       </div>

@@ -15,6 +15,7 @@ from routes.floorplan_routes import floorplan_bp
 from routes.dashboard_routes import dashboard_bp
 from routes.area_map_routes import area_map_bp
 from routes.public_routes import public_bp
+from routes.hall_routes import hall_bp
 from detection import detect_rects_by_color, detect_walls_by_lines, draw_overlay
 from detection_hierarchy import detect_rects_with_hierarchy, build_groups, draw_overlay_with_hierarchy
 from detection_subsections import detect_with_subsections
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(floorplan_bp, url_prefix='/api')
     app.register_blueprint(area_map_bp, url_prefix='/api')
     app.register_blueprint(public_bp, url_prefix='/api/public')
+    app.register_blueprint(hall_bp, url_prefix='/api')
     
     # Register dashboard blueprint
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')

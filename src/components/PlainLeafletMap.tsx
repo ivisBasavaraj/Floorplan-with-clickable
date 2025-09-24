@@ -81,6 +81,10 @@ export interface PlainLeafletMapProps {
   zoom?: number;
   onBoothHover?: (booth: any) => void;
   onBoothClick?: (booth: any) => void;
+  halls?: { id: string; name: string; polygon: [number, number][]; color?: string }[];
+  onHallClick?: (hall: { id: string; name: string; polygon: [number, number][]; color?: string }) => void;
+  enableDrawPolygon?: boolean;
+  onPolygonComplete?: (polygon: [number, number][]) => void;
 }
 
 const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
@@ -90,6 +94,10 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
   zoom = 16,
   onBoothHover,
   onBoothClick,
+  halls,
+  onHallClick,
+  enableDrawPolygon,
+  onPolygonComplete,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -112,12 +120,37 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
     });
     mapRef.current = map;
 
-    // Base layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20,
+    // Base layer - Standard OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
     }).addTo(map);
+
+    // Optional hall polygons layer first so canvas sits above
+    let hallLayer: L.LayerGroup | null = null;
+    if (halls && halls.length) {
+      hallLayer = L.layerGroup();
+      const allPoints: L.LatLngExpression[] = [];
+      halls.forEach((h) => {
+        const poly = L.polygon(h.polygon, {
+          color: h.color || '#1d4ed8',
+          weight: 2,
+          fillOpacity: 0.2,
+        }).on('click', () => onHallClick && onHallClick(h))
+          .bindTooltip(h.name, { permanent: false, direction: 'top' });
+        (hallLayer as L.LayerGroup).addLayer(poly);
+        // collect points to fit bounds
+        h.polygon.forEach(([lat, lng]) => allPoints.push([lat, lng]));
+      });
+      hallLayer.addTo(map);
+      // Auto-zoom to show all halls
+      if (allPoints.length) {
+        try {
+          const b = L.latLngBounds(allPoints as any);
+          map.fitBounds(b, { padding: [20, 20] });
+        } catch {}
+      }
+    }
 
     // Canvas overlay in overlay pane
     const canvas = L.DomUtil.create('canvas', 'leaflet-custom-canvas') as HTMLCanvasElement;
@@ -187,6 +220,40 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
     map.on('move', redraw);
     map.on('zoom', redraw);
     map.on('resize', redraw);
+
+    // Simple polygon drawing: click to add points, double-click to finish
+    let drawing: L.Polyline | null = null;
+    let drawPoints: L.LatLng[] = [];
+
+    const clickAddPoint = (e: L.LeafletMouseEvent) => {
+      if (!enableDrawPolygon) return;
+      drawPoints.push(e.latlng);
+      if (!drawing) {
+        drawing = L.polyline(drawPoints, { color: '#ef4444', weight: 2 }).addTo(map);
+      } else {
+        drawing.setLatLngs(drawPoints);
+      }
+    };
+
+    const dblClickFinish = () => {
+      if (!enableDrawPolygon) return;
+      if (drawPoints.length >= 3) {
+        const polygonLatLngs = drawPoints.map((p) => [p.lat, p.lng]) as [number, number][];
+        if (onPolygonComplete) onPolygonComplete(polygonLatLngs);
+      }
+      if (drawing) {
+        map.removeLayer(drawing);
+        drawing = null;
+      }
+      drawPoints = [];
+    };
+
+    if (enableDrawPolygon) {
+      map.on('click', clickAddPoint);
+      map.on('dblclick', dblClickFinish);
+      map.doubleClickZoom.disable();
+    }
+
     redraw();
 
     return () => {
@@ -198,14 +265,32 @@ const PlainLeafletMap: React.FC<PlainLeafletMapProps> = ({
         canvas.removeEventListener('mousemove', handleMouseMove);
         canvas.removeEventListener('mouseout', handleMouseOut);
       }
+      if (enableDrawPolygon) {
+        map.off('click', clickAddPoint);
+        map.off('dblclick', dblClickFinish);
+        map.doubleClickZoom.enable();
+      }
       if (canvasRef.current && canvasRef.current.parentNode) {
         canvasRef.current.parentNode.removeChild(canvasRef.current);
+      }
+      if (hallLayer) {
+        hallLayer.clearLayers();
+        map.removeLayer(hallLayer);
       }
       canvasRef.current = null;
       map.remove();
       mapRef.current = null;
     };
-  }, [center.toString(), zoom, imageBounds, drawBooths]);
+  }, [
+    center.toString(),
+    zoom,
+    imageBounds ? JSON.stringify(imageBounds) : '',
+    drawBooths,
+    JSON.stringify(halls || []),
+    !!onHallClick,
+    enableDrawPolygon,
+    !!onPolygonComplete
+  ]);
 
   return (
     <div style={{ height: '100%', width: '100%' }}>

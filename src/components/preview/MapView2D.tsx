@@ -37,9 +37,16 @@ function getRotatedRectPoints(x: number, y: number, w: number, h: number, rotati
 export interface MapView2DProps {
   // Optional override for real-world bounds (SW -> NE)
   imageBounds?: [[number, number], [number, number]];
+  // Optional map center and zoom
+  center?: [number, number];
+  zoom?: number;
+  halls?: { id: string; name: string; polygon: [number, number][]; color?: string }[];
+  onHallClick?: (hall: { id: string; name: string; polygon: [number, number][]; color?: string }) => void;
+  enableDrawPolygon?: boolean;
+  onPolygonComplete?: (polygon: [number, number][]) => void;
 }
 
-export const MapView2D: React.FC<MapView2DProps> = ({ imageBounds = DEFAULT_IMAGE_BOUNDS }) => {
+export const MapView2D: React.FC<MapView2DProps> = ({ imageBounds = DEFAULT_IMAGE_BOUNDS, center, zoom, halls, onHallClick, enableDrawPolygon, onPolygonComplete }) => {
   const { elements, canvasSize } = useCanvasStore();
 
   const drawBooths = useCallback((ctx: CanvasRenderingContext2D, transform: any) => {
@@ -92,7 +99,16 @@ export const MapView2D: React.FC<MapView2DProps> = ({ imageBounds = DEFAULT_IMAG
   }, [elements, canvasSize]);
 
   return (
-    <PlainLeafletMap drawBooths={drawBooths} imageBounds={imageBounds} />
+    <PlainLeafletMap
+      drawBooths={drawBooths}
+      imageBounds={imageBounds}
+      center={center}
+      zoom={zoom}
+      halls={halls}
+      onHallClick={onHallClick}
+      enableDrawPolygon={enableDrawPolygon}
+      onPolygonComplete={onPolygonComplete}
+    />
   );
 };
 

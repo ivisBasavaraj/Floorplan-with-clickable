@@ -167,89 +167,70 @@ export const Canvas: React.FC = () => {
     const handleDetections = (e: CustomEvent<DetectionData>) => {
       const { rects, walls, imageWidth, imageHeight } = e.detail || {};
 
-      // Map detection coordinates (image space) to canvas space where background is drawn
+      // Calculate scaling based on how background image is actually displayed
       const bg = useCanvasStore.getState().backgroundImage;
       const cs = useCanvasStore.getState().canvasSize;
       const imgW = Math.max(imageWidth || 1, 1);
       const imgH = Math.max(imageHeight || 1, 1);
+      
+      // Default to 1:1 mapping if no background
       let scaleX = 1, scaleY = 1, offsetX = 0, offsetY = 0;
-
+      
       if (bg) {
-        const imgRatio = imgW / imgH;
-        switch (bg.fitMode) {
-          case 'stretch':
-            scaleX = cs.width / imgW;
-            scaleY = cs.height / imgH;
-            offsetX = bg.position.x;
-            offsetY = bg.position.y;
-            break;
-          case 'fit': {
-            const canvasRatio = cs.width / cs.height;
-            if (canvasRatio > imgRatio) {
-              // Fit by height
-              const dispH = cs.height;
-              const dispW = cs.height * imgRatio;
-              scaleX = dispW / imgW;
-              scaleY = dispH / imgH;
-              offsetX = bg.position.x; // top-left anchored
-              offsetY = bg.position.y;
-            } else {
-              // Fit by width
-              const dispW = cs.width;
-              const dispH = cs.width / imgRatio;
-              scaleX = dispW / imgW;
-              scaleY = dispH / imgH;
-              offsetX = bg.position.x;
-              offsetY = bg.position.y;
-            }
-            break;
-          }
-          case 'center':
-            scaleX = bg.scale;
-            scaleY = bg.scale;
-            offsetX = bg.position.x;
-            offsetY = bg.position.y;
-            break;
-          case 'tile':
-            scaleX = bg.scale;
-            scaleY = bg.scale;
-            offsetX = bg.position.x;
-            offsetY = bg.position.y;
-            break;
-          default:
-            offsetX = bg.position.x;
-            offsetY = bg.position.y;
-            break;
-        }
+        // Use the background's actual scale and position
+        scaleX = bg.scale || 1;
+        scaleY = bg.scale || 1;
+        offsetX = bg.position?.x || 0;
+        offsetY = bg.position?.y || 0;
+        
+        console.log('Background settings:', {
+          scale: bg.scale,
+          position: bg.position,
+          fitMode: bg.fitMode
+        });
       }
       
       if (rects && rects.length > 0) {
-        console.log('Adding detected booths (mapped):', rects.length);
-        rects.forEach(rect => {
-          const mappedX = offsetX + rect.x * scaleX;
-          const mappedY = offsetY + rect.y * scaleY;
-          const mappedW = rect.w * scaleX;
-          const mappedH = rect.h * scaleY;
+        console.log('Adding detected booths:', rects.length);
+        console.log('Image size:', imgW, 'x', imgH);
+        console.log('Canvas size:', cs.width, 'x', cs.height);
+        console.log('Scale factors:', scaleX, scaleY, 'Offset:', offsetX, offsetY);
+        
+        rects.forEach((rect, index) => {
+          const origX = rect.x || 0;
+          const origY = rect.y || 0;
+          const origW = rect.w || rect.width || 50;
+          const origH = rect.h || rect.height || 50;
+          
+          const scaledX = origX * scaleX + offsetX;
+          const scaledY = origY * scaleY + offsetY;
+          const scaledW = origW * scaleX;
+          const scaledH = origH * scaleY;
+
+          console.log(`Booth ${index + 1}: orig(${origX},${origY},${origW},${origH}) -> scaled(${scaledX},${scaledY},${scaledW},${scaledH})`);
 
           const boothElement: Omit<BoothElement, 'id' | 'selected'> = {
             type: 'booth',
-            x: mappedX,
-            y: mappedY,
-            width: mappedW,
-            height: mappedH,
+            x: scaledX,
+            y: scaledY,
+            width: scaledW,
+            height: scaledH,
             rotation: 0,
             draggable: true,
             fill: '#E8F5E8',
             stroke: '#4CAF50',
             strokeWidth: 2,
             layer: 1,
-            number: `B-${rect.id}`,
+            number: `B-${rect.id || index + 1}`,
             status: 'available',
             dimensions: {
-              imperial: `${Math.round(mappedW / 12)}'x${Math.round(mappedH / 12)}'`,
-              metric: `${Math.round(mappedW * 0.0254)}m x ${Math.round(mappedH * 0.0254)}m`
+              imperial: `${Math.round(scaledW / 12)}'x${Math.round(scaledH / 12)}'`,
+              metric: `${Math.round(scaledW * 0.0254)}m x ${Math.round(scaledH * 0.0254)}m`
             },
-            customProperties: { detectedScore: rect.score }
+            customProperties: { 
+              detectedScore: rect.score || 1.0,
+              detectionType: rect.type || 'unknown'
+            }
           };
           addElement(boothElement);
         });
@@ -288,12 +269,14 @@ export const Canvas: React.FC = () => {
 
     const handleManualDetection = async (e: CustomEvent<{ filename: string }>) => {
       try {
+        console.log('Starting manual detection for:', e.detail.filename);
         const response = await fetch('http://localhost:5000/detect-from-upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: e.detail.filename })
+          body: JSON.stringify({ filename: e.detail.filename, backend: 'opencv' })
         });
         const data = await response.json();
+        console.log('Detection response:', data);
         handleDetections(new CustomEvent('simulator:detections', { detail: data }));
       } catch (error) {
         console.error('Manual detection failed:', error);
@@ -1443,7 +1426,7 @@ export const Canvas: React.FC = () => {
             y={0}
             width={canvasSize.width}
             height={canvasSize.height}
-            fill="#f7fafc"
+            fill="#ffffff"
             stroke="#e2e8f0"
             strokeWidth={1}
           />

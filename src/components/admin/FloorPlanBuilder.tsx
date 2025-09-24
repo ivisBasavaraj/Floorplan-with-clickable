@@ -10,6 +10,8 @@ import { PropertiesPanel } from '../panels/PropertiesPanel';
 import { ToolsPanel } from '../panels/ToolsPanel';
 import { FloorPlanViewer3D } from '../viewer/FloorPlanViewer3D';
 import { AreaMapSelector } from './AreaMapSelector';
+import { MapView2D } from '../preview/MapView2D';
+import { uploadAndDetect } from '../detectionGlue';
 
 interface AreaMap {
   id: string;
@@ -38,12 +40,30 @@ export const FloorPlanBuilder: React.FC = () => {
   const [showAreaMapSelector, setShowAreaMapSelector] = useState(false);
   const [floorPlanName, setFloorPlanName] = useState('');
   const [floorPlanDescription, setFloorPlanDescription] = useState('');
+  const [selectedHallId, setSelectedHallId] = useState<string>('hall1');
   const [isPublished, setIsPublished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewMode, setPreviewMode] = useState<'2d' | '3d'>('2d');
+  // Show Leaflet OSM map in editor center when creating new floor plan
+  const [showMap, setShowMap] = useState(true);
+  const [drawHallMode, setDrawHallMode] = useState(false);
+  const [halls, setHalls] = useState<{ id: string; name: string; polygon: [number, number][]; color?: string }[]>([
+    { id: 'hall1', name: 'BIEC Hall 1', color: '#2563eb', polygon: [
+      [13.06352, 77.47472], [13.06355, 77.47563], [13.06293, 77.47568], [13.06289, 77.47477]
+    ]},
+    { id: 'hall2', name: 'BIEC Hall 2', color: '#16a34a', polygon: [
+      [13.06294, 77.47475], [13.06298, 77.47566], [13.06232, 77.47571], [13.06227, 77.47480]
+    ]},
+    { id: 'hall3', name: 'BIEC Hall 3', color: '#f59e0b', polygon: [
+      [13.06232, 77.47479], [13.06236, 77.47569], [13.06172, 77.47574], [13.06167, 77.47484]
+    ]},
+  ]);
+  // Default to BIEC, Bengaluru (13°03'45.5"N, 77°28'33.3"E)
+  const defaultCenter: [number, number] = [13.062639, 77.475917];
+  const defaultZoom = 16;
 
   useEffect(() => {
     if (id === 'new') {
@@ -145,6 +165,7 @@ export const FloorPlanBuilder: React.FC = () => {
       const floorPlanData = {
         name: floorPlanName,
         description: floorPlanDescription,
+        hall_id: selectedHallId,
         event_id: 'default_event',
         floor: 1,
         status: isPublished ? 'published' : 'draft',
@@ -244,6 +265,14 @@ export const FloorPlanBuilder: React.FC = () => {
             </button>
           )}
           <button
+            onClick={() => setShowMap((v) => !v)}
+            className="px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Toggle Leaflet Map"
+          >
+            <FontAwesomeIcon icon="fas fa-map-location-dot" size={14} className="mr-2" />
+            {showMap ? 'Hide Map' : 'Show Map'}
+          </button>
+          <button
             onClick={() => setShowPreview(true)}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
           >
@@ -291,6 +320,14 @@ export const FloorPlanBuilder: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setDrawHallMode((v) => !v)}
+            className={`px-3 py-2 ${drawHallMode ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white text-sm rounded-md transition-colors`}
+            title={drawHallMode ? 'Double-click on map to finish polygon' : 'Click to start drawing hall polygon'}
+          >
+            <FontAwesomeIcon icon="fas fa-draw-polygon" size={14} className="mr-2" />
+            {drawHallMode ? 'Finish Drawing' : 'Draw Hall'}
+          </button>
           <button
             onClick={() => {
               const bgImage = useCanvasStore.getState().backgroundImage;
@@ -371,9 +408,57 @@ export const FloorPlanBuilder: React.FC = () => {
           </div>
         </div>
 
-        {/* Center - Canvas */}
+        {/* Center - Canvas/Map */}
         <div className="flex-1 relative bg-gray-100">
-          <Canvas />
+          {showMap ? (
+            // Render Leaflet OpenStreetMap centered on Madavara by default
+            <div className="absolute inset-0">
+              <MapView2D
+                imageBounds={[[13.0608, 77.4738], [13.0643, 77.4780]]}
+                center={defaultCenter}
+                zoom={defaultZoom}
+                halls={halls}
+                onHallClick={async (hall) => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = async () => {
+                    if (input.files && input.files[0]) {
+                      try {
+                        const filename = await uploadAndDetect(input.files[0]);
+                        const url = `http://localhost:5000/uploads/${filename}`;
+                        useCanvasStore.getState().setBackgroundImage({
+                          url,
+                          opacity: 1,
+                          fitMode: 'center',
+                          locked: false,
+                          position: { x: 0, y: 0 },
+                          scale: 1,
+                          rotation: 0,
+                        });
+                        alert(`Background set and detection started for ${hall.name}.`);
+                      } catch (err) {
+                        console.error(err);
+                        alert('Upload or detection failed. Check console.');
+                      }
+                    }
+                  };
+                  input.click();
+                }}
+                enableDrawPolygon={drawHallMode}
+                onPolygonComplete={(polygon) => {
+                  const name = prompt('Name this hall:');
+                  if (name) {
+                    const newHall = { id: `${name.toLowerCase().replace(/\s+/g,'-')}-${Date.now()}`, name, polygon, color: '#06b6d4' };
+                    setHalls((prev) => [...prev, newHall]);
+                    setDrawHallMode(false);
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <Canvas />
+          )}
         </div>
 
         {/* Right Sidebar - Properties */}
@@ -431,6 +516,21 @@ export const FloorPlanBuilder: React.FC = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter floor plan name"
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign to Hall
+                  </label>
+                  <select
+                    value={selectedHallId}
+                    onChange={(e) => setSelectedHallId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {halls.map(hall => (
+                      <option key={hall.id} value={hall.id}>{hall.name}</option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>
