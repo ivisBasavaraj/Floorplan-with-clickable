@@ -312,6 +312,18 @@ export const ProfessionalFloorPlanViewer: React.FC = () => {
     
     if (boothElement) {
       setSelectedBooth(boothElement);
+      
+      // Highlight the booth on the canvas
+      const { selectElements } = useCanvasStore.getState();
+      selectElements([boothElement.id]);
+      
+      // Scroll booth into view if needed
+      setTimeout(() => {
+        const boothElement = document.querySelector(`[data-booth-id="${boothElement.id}"]`);
+        if (boothElement) {
+          boothElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
     }
   };
 

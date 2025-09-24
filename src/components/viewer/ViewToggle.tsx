@@ -13,12 +13,12 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
   className = ''
 }) => {
   return (
-    <div className={`flex bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden ${className}`}>
+    <div className={`flex bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden glass-morphism ${className}`}>
       <button
         onClick={() => onViewChange('2d')}
-        className={`flex items-center space-x-2 px-4 py-3 transition-all duration-200 ${
+        className={`flex items-center space-x-2 px-4 py-3 transition-all duration-200 btn-ripple ${
           currentView === '2d'
-            ? 'bg-blue-600 text-white shadow-md'
+            ? 'bg-blue-600 text-white shadow-md gradient-primary'
             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
         }`}
         title="2D Floor Plan View"
@@ -35,9 +35,9 @@ export const ViewToggle: React.FC<ViewToggleProps> = ({
       
       <button
         onClick={() => onViewChange('3d')}
-        className={`flex items-center space-x-2 px-4 py-3 transition-all duration-200 ${
+        className={`flex items-center space-x-2 px-4 py-3 transition-all duration-200 btn-ripple ${
           currentView === '3d'
-            ? 'bg-blue-600 text-white shadow-md'
+            ? 'bg-blue-600 text-white shadow-md gradient-primary'
             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
         }`}
         title="3D Interactive View"

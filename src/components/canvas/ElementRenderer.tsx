@@ -291,17 +291,42 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
   const renderBooth = (booth: BoothElement) => {
     const pathData = `M0,0L${booth.width},0L${booth.width},${booth.height}L0,${booth.height}Z`;
     
+    // ExpofP-style booth colors based on status
+    let fillColor, strokeColor;
+    switch (booth.status) {
+      case 'available':
+        fillColor = '#10b981'; // ExpofP green
+        strokeColor = '#059669';
+        break;
+      case 'reserved':
+        fillColor = '#f59e0b'; // ExpofP amber
+        strokeColor = '#d97706';
+        break;
+      case 'sold':
+        fillColor = '#3b82f6'; // ExpofP blue
+        strokeColor = '#2563eb';
+        break;
+      case 'on-hold':
+        fillColor = '#6b7280'; // ExpofP gray
+        strokeColor = '#4b5563';
+        break;
+      default:
+        fillColor = '#4A90E2';
+        strokeColor = '#2E5BBA';
+    }
+    
     return (
       <>
         <Path
           data={pathData}
-          fill="#4A90E2"
-          stroke="#2E5BBA"
+          fill={fillColor}
+          stroke={strokeColor}
           strokeWidth={3}
-          shadowColor="rgba(74, 144, 226, 0.4)"
+          shadowColor={`${fillColor}40`}
           shadowBlur={8}
           shadowOffset={{ x: 2, y: 2 }}
           shadowOpacity={0.6}
+          cornerRadius={4}
         />
         
         {booth.width > 25 && booth.height > 15 && (
@@ -310,7 +335,7 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
             y={booth.height / 2 - (Math.min(booth.width * 0.3, booth.height * 0.3, 24) / 2)}
             text={booth.number}
             fontSize={Math.min(booth.width * 0.3, booth.height * 0.3, 24)}
-            fontFamily="Arial, sans-serif"
+            fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
             fontStyle="bold"
             fill="white"
             align="center"
@@ -318,6 +343,18 @@ export const ElementRenderer: React.FC<ElementRendererProps> = ({
             shadowColor="rgba(0, 0, 0, 0.3)"
             shadowBlur={2}
             shadowOffset={{ x: 1, y: 1 }}
+          />
+        )}
+        
+        {/* ExpofP-style status indicator */}
+        {booth.status !== 'available' && (
+          <Circle
+            x={booth.width - 8}
+            y={8}
+            radius={6}
+            fill={booth.status === 'sold' ? '#dc2626' : booth.status === 'reserved' ? '#f59e0b' : '#6b7280'}
+            stroke="white"
+            strokeWidth={2}
           />
         )}
       </>

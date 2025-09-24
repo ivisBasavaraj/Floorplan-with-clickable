@@ -113,6 +113,55 @@ export const ExhibitionDemo: React.FC = () => {
               </Link>
             </div>
           </div>
+
+          {/* ExpofP-Inspired Interface */}
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="h-64 bg-gradient-to-br from-indigo-500 to-purple-600 relative overflow-hidden">
+              <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <FontAwesomeIcon icon="fas fa-star" size={64} className="mb-4 opacity-80" />
+                  <h3 className="text-2xl font-bold mb-2">ExpofP-Inspired</h3>
+                  <p className="text-lg opacity-90">Professional expo interface</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                ExpofP-Inspired Interface
+              </h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                A professional interface inspired by demo.expofp.com featuring 
+                modern design patterns, interactive booth selection, advanced search 
+                and filtering, and responsive layouts optimized for exhibitions.
+              </p>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center text-sm text-gray-700">
+                  <FontAwesomeIcon icon="fas fa-check" className="text-green-500 mr-3" />
+                  ExpofP-style design patterns and layouts
+                </div>
+                <div className="flex items-center text-sm text-gray-700">
+                  <FontAwesomeIcon icon="fas fa-check" className="text-green-500 mr-3" />
+                  Interactive exhibitor directory with search
+                </div>
+                <div className="flex items-center text-sm text-gray-700">
+                  <FontAwesomeIcon icon="fas fa-check" className="text-green-500 mr-3" />
+                  Professional booth modals and information panels
+                </div>
+                <div className="flex items-center text-sm text-gray-700">
+                  <FontAwesomeIcon icon="fas fa-check" className="text-green-500 mr-3" />
+                  Glass morphism effects and modern animations
+                </div>
+              </div>
+              <Link
+                to="/expofp-inspired"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+              >
+                <FontAwesomeIcon icon="fas fa-external-link-alt" className="mr-2" />
+                View Demo
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Additional Demos */}
