@@ -281,3 +281,65 @@ export const healthCheck = async () => {
     return { success: false, error };
   }
 };
+
+// Hierarchical Floor Plan API
+export const hierarchicalAPI = {
+  async uploadAreaPlan(formData: FormData) {
+    const response = await fetch(`${API_BASE_URL}/admin/floorplans/area-upload`, {
+      method: 'POST',
+      headers: {
+        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+      },
+      body: formData,
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+
+  async uploadHallPlan(hallId: string, formData: FormData) {
+    const response = await fetch(`${API_BASE_URL}/admin/floorplans/hall-upload/${hallId}`, {
+      method: 'POST',
+      headers: {
+        ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+      },
+      body: formData,
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+
+  async getAreaPlans() {
+    const response = await fetch(`${API_BASE_URL}/admin/area-plans`, {
+      headers: getAuthHeaders(),
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+
+  async getHallPlans(hallId: string) {
+    const response = await fetch(`${API_BASE_URL}/admin/hall-plans/${hallId}`, {
+      headers: getAuthHeaders(),
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+
+  async assignPlanToHall(hallId: string, planId: string) {
+    const response = await fetch(`${API_BASE_URL}/admin/halls/${hallId}/assign-plan`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ plan_id: planId }),
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+
+  async getPublicAreaPlans() {
+    const response = await fetch(`${API_BASE_URL}/public/area-plans`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+
+  async getPublicHallPlans(hallId: string) {
+    const response = await fetch(`${API_BASE_URL}/public/hall-plans/${hallId}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return { success: response.ok, data: await response.json() };
+  },
+};

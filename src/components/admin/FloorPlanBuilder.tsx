@@ -12,6 +12,8 @@ import { FloorPlanViewer3D } from '../viewer/FloorPlanViewer3D';
 import { AreaMapSelector } from './AreaMapSelector';
 import { MapView2D } from '../preview/MapView2D';
 import { uploadAndDetect } from '../detectionGlue';
+import { HierarchicalUploader } from './HierarchicalUploader';
+import { HallManagement } from './HallManagement';
 
 interface AreaMap {
   id: string;
@@ -47,6 +49,8 @@ export const FloorPlanBuilder: React.FC = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewMode, setPreviewMode] = useState<'2d' | '3d'>('2d');
+  const [showHierarchicalUploader, setShowHierarchicalUploader] = useState(false);
+  const [showHallManagement, setShowHallManagement] = useState(false);
   // Show Leaflet OSM map in editor center when creating new floor plan
   const [showMap, setShowMap] = useState(true);
   const [drawHallMode, setDrawHallMode] = useState(false);
@@ -246,6 +250,20 @@ export const FloorPlanBuilder: React.FC = () => {
                 {selectedAreaMap ? selectedAreaMap.name : 'Select an area map to begin'}
               </p>
             </div>
+            <button
+              onClick={() => setShowHierarchicalUploader(true)}
+              className="px-3 py-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
+            >
+              <FontAwesomeIcon icon="fas fa-layer-group" size={14} className="mr-2" />
+              Hierarchical Upload
+            </button>
+            <button
+              onClick={() => setShowHallManagement(true)}
+              className="px-3 py-2 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
+            >
+              <FontAwesomeIcon icon="fas fa-building" size={14} className="mr-2" />
+              Manage Halls
+            </button>
           </div>
           {saveStatus && (
             <span className="text-xs px-3 py-1 rounded-full bg-green-100 text-green-700">
@@ -620,6 +638,16 @@ export const FloorPlanBuilder: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Hierarchical Uploader Modal */}
+      {showHierarchicalUploader && (
+        <HierarchicalUploader onClose={() => setShowHierarchicalUploader(false)} />
+      )}
+
+      {/* Hall Management Modal */}
+      {showHallManagement && (
+        <HallManagement onClose={() => setShowHallManagement(false)} />
       )}
     </div>
   );

@@ -890,20 +890,35 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
                   drawBooths={(ctx) => { /* no booths drawn in user map gate */ }}
                   halls={halls}
                   onHallClick={async (hall) => {
-                    setSelectedHallId(hall.id);
-                    // Find floor plans for this specific hall only
-                    const hallPlans = floorPlans.filter(plan => plan.hall_id === hall.id);
-                    if (hallPlans.length > 0) {
-                      await loadFloorPlanDetails(hallPlans[0]);
-                      setViewMode('2d');
-                    } else {
-                      // Fallback: load any available floor plan for now
-                      if (floorPlans.length > 0) {
-                        await loadFloorPlanDetails(floorPlans[0]);
-                        setViewMode('2d');
+                    try {
+                      setSelectedHallId(hall.id);
+                      
+                      // Try to load hall-specific floor plans using hierarchical API
+                      const hallPlansResult = await hierarchicalAPI.getPublicHallPlans(hall.id);
+                      
+                      if (hallPlansResult.success && hallPlansResult.data.hall_plans.length > 0) {
+                        const hallPlans = hallPlansResult.data.hall_plans;
+                        
+                        if (hallPlans.length === 1) {
+                          // Single plan - load directly
+                          await loadHallFloorPlan(hallPlans[0]);
+                          setViewMode('2d');
+                        } else {
+                          // Multiple plans - show picker
+                          setPlanPicker({ open: true, hallId: hall.id, plans: hallPlans });
+                        }
                       } else {
-                        alert(`No floor plan available for ${hall.name}`);
+                        // Fallback: check if there are any global floor plans
+                        if (floorPlans.length > 0) {
+                          await loadFloorPlanDetails(floorPlans[0]);
+                          setViewMode('2d');
+                        } else {
+                          alert(`No floor plan available for ${hall.name}`);
+                        }
                       }
+                    } catch (error) {
+                      console.error('Failed to load hall floor plans:', error);
+                      alert(`Failed to load floor plan for ${hall.name}`);
                     }
                   }}
                   center={[13.062639, 77.475917]}
@@ -952,7 +967,9 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
           {planPicker.open && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
               <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-                <h3 className="text-lg font-semibold mb-4">Choose a floor plan</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  Choose a floor plan for {halls.find(h => h.id === planPicker.hallId)?.name}
+                </h3>
                 {planPicker.plans.length === 0 ? (
                   <p className="text-gray-600">No published plans available for this hall.</p>
                 ) : (
@@ -962,7 +979,7 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
                         <button
                           className="w-full text-left px-4 py-2 rounded border hover:bg-gray-50"
                           onClick={async () => {
-                            await loadFloorPlanDetails(p);
+                            await loadHallFloorPlan(p);
                             setPlanPicker({ open: false, hallId: null, plans: [] });
                             setViewMode('2d');
                           }}
@@ -996,4 +1013,17 @@ export const EnhancedUserFloorPlanViewer: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// Helper function to load hall-specific floor plans
+const loadHallFloorPlan = async (hallPlan: any) => {
+  try {
+    // Load hall floor plan state directly
+    if (hallPlan.state) {
+      const { loadFloorPlan } = useCanvasStore.getState();
+      loadFloorPlan(hallPlan.state);
+    }
+  } catch (error) {
+    console.error('Failed to load hall floor plan:', error);
+  }
 };
