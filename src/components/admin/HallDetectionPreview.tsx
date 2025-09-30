@@ -72,11 +72,43 @@ export const HallDetectionPreview: React.FC<HallDetectionPreviewProps> = ({
       const { x, y, width, height } = hall.bounds;
       const isSelected = selectedHallId === hall.id;
       
-      // Get color based on detection method
+      // Get color based on detection method and hall color
       let strokeColor = '#3b82f6'; // Default blue
       let fillColor = 'rgba(59, 130, 246, 0.2)';
       
-      switch (hall.detection_method) {
+      // First check if hall has a specific color
+      if (hall.color) {
+        switch (hall.color) {
+          case 'blue':
+          case 'light_blue':
+            strokeColor = '#3b82f6';
+            fillColor = 'rgba(59, 130, 246, 0.3)';
+            break;
+          case 'green':
+          case 'light_green':
+            strokeColor = '#10b981';
+            fillColor = 'rgba(16, 185, 129, 0.3)';
+            break;
+          case 'red':
+          case 'light_red':
+            strokeColor = '#ef4444';
+            fillColor = 'rgba(239, 68, 68, 0.3)';
+            break;
+          case 'orange':
+          case 'yellow':
+          case 'light_orange':
+            strokeColor = '#f59e0b';
+            fillColor = 'rgba(245, 158, 11, 0.3)';
+            break;
+          case 'purple':
+          case 'light_purple':
+            strokeColor = '#8b5cf6';
+            fillColor = 'rgba(139, 92, 246, 0.3)';
+            break;
+        }
+      } else {
+        // Fallback to detection method colors
+        switch (hall.detection_method) {
         case 'color_blue':
           strokeColor = '#3b82f6';
           fillColor = 'rgba(59, 130, 246, 0.2)';
@@ -90,16 +122,26 @@ export const HallDetectionPreview: React.FC<HallDetectionPreviewProps> = ({
           fillColor = 'rgba(239, 68, 68, 0.2)';
           break;
         case 'color_yellow':
+        case 'color_orange':
           strokeColor = '#f59e0b';
           fillColor = 'rgba(245, 158, 11, 0.2)';
+          break;
+        case 'color_purple':
+          strokeColor = '#8b5cf6';
+          fillColor = 'rgba(139, 92, 246, 0.2)';
           break;
         case 'merged':
           strokeColor = '#8b5cf6';
           fillColor = 'rgba(139, 92, 246, 0.2)';
           break;
+        case 'template_matching':
+          strokeColor = '#06b6d4';
+          fillColor = 'rgba(6, 182, 212, 0.2)';
+          break;
         default:
           strokeColor = '#6b7280';
           fillColor = 'rgba(107, 114, 128, 0.2)';
+        }
       }
       
       if (isSelected) {
@@ -107,23 +149,24 @@ export const HallDetectionPreview: React.FC<HallDetectionPreviewProps> = ({
         fillColor = 'rgba(220, 38, 38, 0.3)';
       }
       
-      // Draw hall rectangle
+      // Draw hall rectangle with enhanced styling
       ctx.fillStyle = fillColor;
       ctx.fillRect(x, y, width, height);
       
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = isSelected ? 4 : 2;
+      ctx.lineWidth = isSelected ? 5 : 3;
       ctx.strokeRect(x, y, width, height);
       
-      // Draw hall label
+      // Draw enhanced hall label with better visibility
       const labelX = x + width / 2;
       const labelY = y + height / 2;
       
       // Label background
       ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.font = 'bold 16px Arial';
       const textMetrics = ctx.measureText(hall.name);
-      const labelWidth = textMetrics.width + 16;
-      const labelHeight = 24;
+      const labelWidth = textMetrics.width + 20;
+      const labelHeight = 30;
       
       ctx.fillRect(
         labelX - labelWidth / 2,
@@ -134,7 +177,7 @@ export const HallDetectionPreview: React.FC<HallDetectionPreviewProps> = ({
       
       // Label border
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 2;
       ctx.strokeRect(
         labelX - labelWidth / 2,
         labelY - labelHeight / 2,
@@ -144,16 +187,30 @@ export const HallDetectionPreview: React.FC<HallDetectionPreviewProps> = ({
       
       // Label text
       ctx.fillStyle = '#1f2937';
-      ctx.font = 'bold 14px Arial';
+      ctx.font = 'bold 16px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(hall.name, labelX, labelY);
       
-      // Confidence indicator
-      const confidenceText = `${(hall.confidence * 100).toFixed(0)}%`;
+      // Enhanced confidence and area indicator
+      const confidenceText = `${(hall.confidence * 100).toFixed(0)}% • ${(hall.area / 1000).toFixed(0)}k px²`;
       ctx.fillStyle = strokeColor;
-      ctx.font = '12px Arial';
-      ctx.fillText(confidenceText, labelX, labelY + 15);
+      ctx.font = 'bold 12px Arial';
+      ctx.fillText(confidenceText, labelX, labelY + 18);
+      
+      // Draw corner indicators for interactive feedback
+      if (isSelected) {
+        const cornerSize = 8;
+        ctx.fillStyle = strokeColor;
+        // Top-left corner
+        ctx.fillRect(x - cornerSize/2, y - cornerSize/2, cornerSize, cornerSize);
+        // Top-right corner
+        ctx.fillRect(x + width - cornerSize/2, y - cornerSize/2, cornerSize, cornerSize);
+        // Bottom-left corner
+        ctx.fillRect(x - cornerSize/2, y + height - cornerSize/2, cornerSize, cornerSize);
+        // Bottom-right corner
+        ctx.fillRect(x + width - cornerSize/2, y + height - cornerSize/2, cornerSize, cornerSize);
+      }
     });
   };
 

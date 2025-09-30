@@ -14,6 +14,7 @@ import { MapView2D } from '../preview/MapView2D';
 import { uploadAndDetect } from '../detectionGlue';
 import { HierarchicalUploader } from './HierarchicalUploader';
 import { HallManagement } from './HallManagement';
+import { AreaFloorPlanUploader } from './AreaFloorPlanUploader';
 
 interface AreaMap {
   id: string;
@@ -50,6 +51,7 @@ export const FloorPlanBuilder: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [previewMode, setPreviewMode] = useState<'2d' | '3d'>('2d');
   const [showHierarchicalUploader, setShowHierarchicalUploader] = useState(false);
+  const [showAreaUploader, setShowAreaUploader] = useState(false);
   const [showHallManagement, setShowHallManagement] = useState(false);
   // Show Leaflet OSM map in editor center when creating new floor plan
   const [showMap, setShowMap] = useState(true);
@@ -256,6 +258,13 @@ export const FloorPlanBuilder: React.FC = () => {
             >
               <FontAwesomeIcon icon="fas fa-layer-group" size={14} className="mr-2" />
               Hierarchical Upload
+            </button>
+            <button
+              onClick={() => setShowAreaUploader(true)}
+              className="px-3 py-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+            >
+              <FontAwesomeIcon icon="fas fa-building" size={14} className="mr-2" />
+              Area Floor Plan
             </button>
             <button
               onClick={() => setShowHallManagement(true)}
@@ -643,6 +652,19 @@ export const FloorPlanBuilder: React.FC = () => {
       {/* Hierarchical Uploader Modal */}
       {showHierarchicalUploader && (
         <HierarchicalUploader onClose={() => setShowHierarchicalUploader(false)} />
+      )}
+
+      {/* Area Floor Plan Uploader Modal */}
+      {showAreaUploader && (
+        <AreaFloorPlanUploader 
+          onAreaPlanCreated={(areaPlan) => {
+            console.log('Area plan created:', areaPlan);
+            setShowAreaUploader(false);
+            // Optionally navigate to hall management
+            setShowHallManagement(true);
+          }}
+          onClose={() => setShowAreaUploader(false)} 
+        />
       )}
 
       {/* Hall Management Modal */}

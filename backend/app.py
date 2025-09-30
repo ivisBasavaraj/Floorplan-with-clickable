@@ -96,19 +96,21 @@ def create_app():
                 backend_choice = (request.args.get('backend') or (data.get('backend') if isinstance(data, dict) else None) or Config.DETECTION_BACKEND)
                 backend_choice = (backend_choice or 'yolo').strip().lower()
 
+                # Enhanced detection parameters for better accuracy
                 if backend_choice == 'opencv':
-                    rects = detect_rects_by_color(file_path, min_area=800)
+                    rects = detect_rects_by_color(file_path, min_area=400)  # Lower threshold for better detection
                 else:
                     # default to YOLO
-                    rects = detect_booths(file_path, conf=0.3, iou=0.5)
+                    rects = detect_booths(file_path, conf=0.25, iou=0.4)  # More sensitive detection
 
-                walls = detect_walls_by_lines(file_path)
+                walls = detect_walls_by_lines(file_path, min_line_len=40)  # Detect shorter walls too
                 
                 # Generate overlay
                 overlay_filename = f"{uuid.uuid4()}_overlay.png"
                 overlay_path = os.path.join(UPLOAD_DIR, overlay_filename)
                 draw_overlay(file_path, rects, walls, overlay_path)
                 
+                # Enhanced response with detection quality metrics
                 return jsonify({
                     'rects': rects,
                     'walls': walls,
@@ -116,7 +118,13 @@ def create_app():
                     'imageHeight': image_height,
                     'overlay': f'/uploads/{overlay_filename}',
                     'filename': filename,
-                    'backend': backend_choice
+                    'backend': backend_choice,
+                    'detection_summary': {
+                        'total_structures': len(rects),
+                        'colored_structures': len([r for r in rects if r.get('color_name', 'unknown') != 'unknown']),
+                        'edge_structures': len([r for r in rects if r.get('type') == 'edge']),
+                        'average_confidence': round(sum(r.get('score', 0) for r in rects) / len(rects), 3) if rects else 0
+                    }
                 }), 200
                 
             except Exception as e:
@@ -129,7 +137,8 @@ def create_app():
                     'imageHeight': image_height,
                     'overlay': None,
                     'filename': filename,
-                    'message': 'Detection failed, but image uploaded successfully'
+                    'message': 'Detection failed, but image uploaded successfully',
+                    'error_details': str(e)
                 }), 200
                 
         except Exception as e:
